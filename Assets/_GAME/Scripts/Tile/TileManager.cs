@@ -1,5 +1,6 @@
 namespace _GAME.Scripts.Tile
 {
+    using System;
     using System.Collections.Generic;
     using UnityEngine;
 
@@ -19,6 +20,24 @@ namespace _GAME.Scripts.Tile
             else
             {
                 Destroy(gameObject);
+            }
+        }
+
+        private void Update()
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                var          ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                var hit = Physics2D.GetRayIntersection(ray, Mathf.Infinity, LayerMask.GetMask("Tiles"));
+                if (hit.collider != null)
+                {
+                    TileView chosenTile = hit.collider.GetComponent<TileView>();
+                    if (chosenTile != null)
+                    {
+                        Debug.Log($"Clicked on a tile! Type: {chosenTile.Type}, Position: {chosenTile.GridPosition}");
+                        //TODO: abcxyz
+                    }
+                }
             }
         }
     }

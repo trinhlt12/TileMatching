@@ -153,6 +153,16 @@ namespace _GAME.Scripts.Grid
             var tileObj = Instantiate(tileData.TilePrefab, cellObj.transform);
             tileObj.transform.localPosition = Vector3.zero;
 
+            var tileView = tileObj.GetComponent<TileView>();
+            if (tileView != null)
+            {
+                tileView.Type        = tileType;
+                tileView.GridPosition = new Vector2Int(col, row); // Note: x=col, y=row
+            }else
+            {
+                Debug.LogWarning($"Tile prefab for {tileType} does not have a TileView component!");
+            }
+
             gridData.cells[row, col].tileType = tileType;
             gridData.cells[row, col].isActive = true;
             tileObj.name                      = $"Tile_{tileType}_{row}_{col}";

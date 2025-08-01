@@ -10,7 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 7339071773869593080}
   - component: {fileID: 1440254122233189698}
-  m_Layer: 0
+  - component: {fileID: 5570982624524178134}
+  m_Layer: 6
   m_Name: Tile_Grape
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -79,6 +80,18 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!114 &5570982624524178134
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1438165929509641080}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26f2c7e34a8a43b883061e080cba314f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6230773365728903409
 GameObject:
   m_ObjectHideFlags: 0
