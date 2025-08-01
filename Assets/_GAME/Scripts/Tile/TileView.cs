@@ -8,11 +8,13 @@ namespace _GAME.Scripts.Tile
         public TileType   Type         { get; set; }
         public Vector2Int GridPosition { get; set; }
 
-        [SerializeField] private Animator animator;
+        [SerializeField] private Animator _animator;
+        [SerializeField] private GameObject _highlight;
 
         private void OnEnable()
         {
             TileManager.OnTileClicked += HandleTileClicked;
+            _highlight.SetActive(false);
         }
 
         private void OnDisable()
@@ -24,12 +26,15 @@ namespace _GAME.Scripts.Tile
         {
             if (chosenTile == this)
             {
-                this.animator.Play("Clicked");
+                this._animator.Play("Clicked");
+                SetHighlight(true);
             }
         }
-        public void SetHighlight(bool highlight){ }
 
-
+        public void SetHighlight(bool highlight)
+        {
+           _highlight.SetActive(highlight);
+        }
 
     }
 }
