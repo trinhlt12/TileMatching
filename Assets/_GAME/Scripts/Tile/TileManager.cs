@@ -12,7 +12,10 @@ namespace _GAME.Scripts.Tile
 
         public static event Action<TileView> OnTileClicked;
 
-
+        [SerializeField] private float _checkDelay = 1.5f;
+        private TileView _selectedTile1;
+        private TileView _selectedTile2;
+        private bool     _isChecking = false;
 
         private void Awake()
         {
@@ -29,6 +32,9 @@ namespace _GAME.Scripts.Tile
 
         private void Update()
         {
+            //Guard clause
+            if(this._isChecking) return;
+
             if (Input.GetMouseButtonDown(0))
             {
                 var          ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -41,9 +47,38 @@ namespace _GAME.Scripts.Tile
                         Debug.Log($"Clicked on a tile! Type: {chosenTile.Type}, Position: {chosenTile.GridPosition}");
                         //TODO: abcxyz
                         OnTileClicked?.Invoke(chosenTile);
-
+                        HandleTileSelection(chosenTile);
                     }
                 }
+            }
+        }
+
+        private void HandleTileSelection(TileView chosenTile)
+        {
+            //case 1
+            if (this._selectedTile1 == chosenTile)
+            {
+                Debug.Log("Clicked on the same tile again, deselecting.");
+                _selectedTile1.SetHighlight(false);
+                _selectedTile1 = null;
+                return;
+            }
+
+            //case 2
+            if (this._selectedTile1 == null)
+            {
+                this._selectedTile1 = chosenTile;
+                this._selectedTile1.SetHighlight(true);
+            }
+            //case 3
+            else
+            {
+                this._selectedTile2 = chosenTile;
+                this._selectedTile2.SetHighlight(true);
+
+                //start checking process:
+                this._isChecking = true;
+                //TODO: checking with coroutine
             }
         }
     }

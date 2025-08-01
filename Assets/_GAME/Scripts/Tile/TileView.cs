@@ -27,7 +27,6 @@ namespace _GAME.Scripts.Tile
             if (chosenTile == this)
             {
                 this._animator.Play("Clicked");
-                SetHighlight(true);
             }
         }
 
