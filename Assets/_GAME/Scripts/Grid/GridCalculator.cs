@@ -4,7 +4,7 @@ namespace _GAME.Scripts.Grid
 
     public class GridCalculator
     {
-        public static GridDimensions CalculateOptimalGrid(Camera camera)
+        /*public static GridDimensions CalculateOptimalGrid(Camera camera)
         {
             var screenHeight = camera.orthographicSize * 2;
             var screenWidth = screenHeight * camera.aspect;
@@ -22,7 +22,7 @@ namespace _GAME.Scripts.Grid
             var finalRows = Mathf.Clamp(maxRows, 2, 10);
 
             return new GridDimensions(finalRows, finalCols, baseTileSize);
-        }
+        }*/
 
         public static void CalculateWorldPositions(GridData gridData, float tileSize, Camera camera)
         {

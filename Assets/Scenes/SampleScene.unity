@@ -122,6 +122,54 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &31016350
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 31016352}
+  - component: {fileID: 31016351}
+  m_Layer: 0
+  m_Name: TileManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &31016351
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 31016350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ebab9492c21406e91969699e1c65182, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  tileDataList:
+  - {fileID: 11400000, guid: 112153cd07c1b4f42833cf77d9fde24a, type: 2}
+  - {fileID: 11400000, guid: 555d7cf5ff58d8b46922247fce5b085b, type: 2}
+  - {fileID: 11400000, guid: 9310a72487d356147a57bb7b7b140ef7, type: 2}
+--- !u!4 &31016352
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 31016350}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.4651384, y: -0.080440804, z: -0.024636604}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &434726594
 GameObject:
   m_ObjectHideFlags: 0
@@ -154,7 +202,7 @@ MonoBehaviour:
   cellPrefab: {fileID: 6276097682223382935, guid: f6d1155308e3fb54088f3fdcdbe60414, type: 3}
   gridParent: {fileID: 746853355}
   rows: 5
-  cols: 4
+  cols: 5
   cellSize: 1
 --- !u!4 &434726596
 Transform:
@@ -431,3 +479,4 @@ SceneRoots:
   - {fileID: 1926230886}
   - {fileID: 434726596}
   - {fileID: 746853355}
+  - {fileID: 31016352}
