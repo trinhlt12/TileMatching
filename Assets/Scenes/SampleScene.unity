@@ -155,6 +155,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 112153cd07c1b4f42833cf77d9fde24a, type: 2}
   - {fileID: 11400000, guid: 555d7cf5ff58d8b46922247fce5b085b, type: 2}
   - {fileID: 11400000, guid: 9310a72487d356147a57bb7b7b140ef7, type: 2}
+  - {fileID: 11400000, guid: 65c0523aeef53cf47a39591abbbf258d, type: 2}
+  - {fileID: 11400000, guid: ed5f241aece1e474d994da1f62d1cba5, type: 2}
 --- !u!4 &31016352
 Transform:
   m_ObjectHideFlags: 0
@@ -201,8 +203,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cellPrefab: {fileID: 6276097682223382935, guid: f6d1155308e3fb54088f3fdcdbe60414, type: 3}
   gridParent: {fileID: 746853355}
-  rows: 5
-  cols: 5
+  rows: 6
+  cols: 6
   cellSize: 1
 --- !u!4 &434726596
 Transform:
@@ -280,7 +282,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 7
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

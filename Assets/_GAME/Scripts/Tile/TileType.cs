@@ -6,5 +6,7 @@ namespace _GAME.Scripts.Tile
         Grape = 1,
         Avocado = 2,
         Carrot = 3,
+        Cookie = 4,
+        Lemon = 5,
     }
 }

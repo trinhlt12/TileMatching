@@ -80,10 +80,10 @@ namespace _GAME.Scripts.Grid
             }
 
             int maxPossibleTypes = totalCells / 2;
-            int numTypesToUse    = Random.Range(1, Mathf.Min(availableTileTypes.Count, maxPossibleTypes) + 1);
+            int numTypesToUse    = Mathf.Min(availableTileTypes.Count, maxPossibleTypes);
 
             List<TileType> selectedTileTypes = availableTileTypes.OrderBy(x => Random.value).Take(numTypesToUse).ToList();
-            Debug.Log($"Sẽ sử dụng {numTypesToUse} loại tile: " + string.Join(", ", selectedTileTypes));
+            Debug.Log($"Will use {numTypesToUse} of tile: " + string.Join(", ", selectedTileTypes));
 
             Dictionary<TileType, int> tileCounts = new Dictionary<TileType, int>();
 
