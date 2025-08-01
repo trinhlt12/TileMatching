@@ -14,9 +14,33 @@ namespace _GAME.Scripts.Grid
         [SerializeField]                               private int   cols;
         [SerializeField]                               private float cellSize = 1f;
 
+        public static GridManager Instance { get; private set; }
         private GridData      gridData;
         private GameObject[,] cellObjects;
         private List<TileDB>  allTileData => TileManager.Instance.tileDataList;
+
+        private void Awake()
+        {
+            if (Instance == null)
+            {
+                Instance = this;
+                DontDestroyOnLoad(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+
+            if (cellPrefab == null)
+            {
+                Debug.LogError("Cell Prefab is not assigned in GridManager!");
+            }
+
+            if (gridParent == null)
+            {
+                Debug.LogError("Grid Parent Transform is not assigned in GridManager!");
+            }
+        }
 
         private void Start()
         {

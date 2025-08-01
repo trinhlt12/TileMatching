@@ -1,7 +1,9 @@
 namespace _GAME.Scripts.Tile
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
+    using _GAME.Scripts.Grid;
     using UnityEngine;
 
     public class TileManager : MonoBehaviour
@@ -79,7 +81,31 @@ namespace _GAME.Scripts.Tile
                 //start checking process:
                 this._isChecking = true;
                 //TODO: checking with coroutine
+                StartCoroutine(CheckMatch());
             }
+        }
+
+        private IEnumerator CheckMatch()
+        {
+            yield return new WaitForSeconds(this._checkDelay);
+            //TODO: path-finding
+            if (this._selectedTile1.Type == this._selectedTile2.Type)
+            {
+                Debug.Log($"Tiles match! Type: {this._selectedTile1.Type}");
+                /*
+                GridManager.Instance.ClearMatch(this._selectedTile1, this._selectedTile2);
+            */
+            }
+            else
+            {
+                Debug.Log($"Tiles do not match! Type1: {this._selectedTile1.Type}, Type2: {this._selectedTile2.Type}");
+                this._selectedTile1.SetHighlight(false);
+                this._selectedTile2.SetHighlight(false);
+            }
+
+            this._selectedTile1 = null;
+            this._selectedTile2 = null;
+            this._isChecking    = false;
         }
     }
 }
