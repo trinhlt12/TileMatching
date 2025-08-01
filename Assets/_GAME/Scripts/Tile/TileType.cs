@@ -8,5 +8,8 @@ namespace _GAME.Scripts.Tile
         Carrot = 3,
         Cookie = 4,
         Lemon = 5,
+        Pancake = 6,
+        Pizza = 7,
+        Burger = 8,
     }
 }

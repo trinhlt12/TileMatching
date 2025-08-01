@@ -157,6 +157,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9310a72487d356147a57bb7b7b140ef7, type: 2}
   - {fileID: 11400000, guid: 65c0523aeef53cf47a39591abbbf258d, type: 2}
   - {fileID: 11400000, guid: ed5f241aece1e474d994da1f62d1cba5, type: 2}
+  - {fileID: 11400000, guid: 9619e7614ef4208488e36da34b18ead2, type: 2}
+  - {fileID: 11400000, guid: 8a8ded1d1796f1447a646f37c49fe1c8, type: 2}
+  - {fileID: 11400000, guid: eba82daa13433a44d846bfcbcefd0f69, type: 2}
 --- !u!4 &31016352
 Transform:
   m_ObjectHideFlags: 0
@@ -203,7 +206,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cellPrefab: {fileID: 6276097682223382935, guid: f6d1155308e3fb54088f3fdcdbe60414, type: 3}
   gridParent: {fileID: 746853355}
-  rows: 6
+  rows: 8
   cols: 6
   cellSize: 1
 --- !u!4 &434726596
