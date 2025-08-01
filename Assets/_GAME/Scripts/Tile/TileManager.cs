@@ -10,6 +10,10 @@ namespace _GAME.Scripts.Tile
 
         public static TileManager Instance { get; private set; }
 
+        public static event Action<TileView> OnTileClicked;
+
+
+
         private void Awake()
         {
             if (Instance == null)
@@ -36,6 +40,8 @@ namespace _GAME.Scripts.Tile
                     {
                         Debug.Log($"Clicked on a tile! Type: {chosenTile.Type}, Position: {chosenTile.GridPosition}");
                         //TODO: abcxyz
+                        OnTileClicked?.Invoke(chosenTile);
+
                     }
                 }
             }
