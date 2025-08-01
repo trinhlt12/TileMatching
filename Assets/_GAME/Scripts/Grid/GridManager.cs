@@ -69,7 +69,7 @@ namespace _GAME.Scripts.Grid
         {
             int totalCells = this.rows * this.cols;
 
-            List<TileType> availableTileTypes = allTileData
+            var availableTileTypes = allTileData
                 .Where(t => t.TileType != TileType.None)
                 .Select(t => t.TileType)
                 .ToList();
@@ -82,10 +82,10 @@ namespace _GAME.Scripts.Grid
             int maxPossibleTypes = totalCells / 2;
             int numTypesToUse    = Mathf.Min(availableTileTypes.Count, maxPossibleTypes);
 
-            List<TileType> selectedTileTypes = availableTileTypes.OrderBy(x => Random.value).Take(numTypesToUse).ToList();
+            var selectedTileTypes = availableTileTypes.OrderBy(x => Random.value).Take(numTypesToUse).ToList();
             Debug.Log($"Will use {numTypesToUse} of tile: " + string.Join(", ", selectedTileTypes));
 
-            Dictionary<TileType, int> tileCounts = new Dictionary<TileType, int>();
+            var tileCounts = new Dictionary<TileType, int>();
 
             foreach (var type in selectedTileTypes)
             {
@@ -100,7 +100,7 @@ namespace _GAME.Scripts.Grid
                 tileCounts[randomType] += 2;
             }
 
-            List<TileType> tilesToPlace = new List<TileType>(totalCells);
+            var tilesToPlace = new List<TileType>(totalCells);
             foreach (var pair in tileCounts)
             {
                 for (int i = 0; i < pair.Value; i++)
