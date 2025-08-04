@@ -34,6 +34,5 @@ namespace _GAME.Scripts.Tile
         {
            _highlight.SetActive(highlight);
         }
-
     }
 }

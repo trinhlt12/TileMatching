@@ -93,6 +93,18 @@ namespace _GAME.Scripts.Grid
             GenerateAndPlaceTiles();
         }
 
+        public void ClearMatch(TileView tile1, TileView tile2)
+        {
+            if (this._tilePools.ContainsKey(tile1.Type))
+            {
+                this._tilePools[tile1.Type].ReturnToPool(tile1);
+            }
+            if (this._tilePools.ContainsKey(tile2.Type))
+            {
+                this._tilePools[tile2.Type].ReturnToPool(tile2);
+            }
+        }
+
         private void SpawnEmptyCells(int newRows, int newCols)
         {
             for (int row = 0; row < newRows; row++)

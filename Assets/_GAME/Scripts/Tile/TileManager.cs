@@ -14,10 +14,10 @@ namespace _GAME.Scripts.Tile
 
         public static event Action<TileView> OnTileClicked;
 
-        [SerializeField] private float _checkDelay = 1.5f;
-        private TileView _selectedTile1;
-        private TileView _selectedTile2;
-        private bool     _isChecking = false;
+        [SerializeField] private float    _checkDelay = 1.5f;
+        private                  TileView _selectedTile1;
+        private                  TileView _selectedTile2;
+        private                  bool     _isChecking = false;
 
         private void Awake()
         {
@@ -35,11 +35,11 @@ namespace _GAME.Scripts.Tile
         private void Update()
         {
             //Guard clause
-            if(this._isChecking) return;
+            if (this._isChecking) return;
 
             if (Input.GetMouseButtonDown(0))
             {
-                var          ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                 var hit = Physics2D.GetRayIntersection(ray, Mathf.Infinity, LayerMask.GetMask("Tiles"));
                 if (hit.collider != null)
                 {
@@ -92,9 +92,7 @@ namespace _GAME.Scripts.Tile
             if (this._selectedTile1.Type == this._selectedTile2.Type)
             {
                 Debug.Log($"Tiles match! Type: {this._selectedTile1.Type}");
-                /*
                 GridManager.Instance.ClearMatch(this._selectedTile1, this._selectedTile2);
-            */
             }
             else
             {
