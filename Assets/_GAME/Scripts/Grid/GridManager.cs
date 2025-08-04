@@ -2,6 +2,7 @@ namespace _GAME.Scripts.Grid
 {
     using System.Collections.Generic;
     using System.Linq;
+    using _GAME.Scripts.Extensions;
     using _GAME.Scripts.Tile;
     using UnityEngine;
 
@@ -14,10 +15,11 @@ namespace _GAME.Scripts.Grid
         [SerializeField]                               private int   cols;
         [SerializeField]                               private float cellSize = 1f;
 
-        public static GridManager Instance { get; private set; }
-        private GridData      gridData;
-        private GameObject[,] cellObjects;
-        private List<TileDB>  allTileData => TileManager.Instance.tileDataList;
+        public static GridManager                                Instance { get; private set; }
+        private       GridData                                   gridData;
+        private       GameObject[,]                              cellObjects;
+        private       List<TileDB>                               allTileData => TileManager.Instance.tileDataList;
+        private       Dictionary<TileType, ObjectPool<TileView>> _tilePools = new Dictionary<TileType, ObjectPool<TileView>>();
 
         private void Awake()
         {
@@ -30,7 +32,10 @@ namespace _GAME.Scripts.Grid
             {
                 Destroy(gameObject);
             }
+        }
 
+        private void OnInit()
+        {
             if (cellPrefab == null)
             {
                 Debug.LogError("Cell Prefab is not assigned in GridManager!");
@@ -40,10 +45,24 @@ namespace _GAME.Scripts.Grid
             {
                 Debug.LogError("Grid Parent Transform is not assigned in GridManager!");
             }
+
+            foreach (var tileData in allTileData)
+            {
+                if(tileData.TileType == TileType.None || tileData.TilePrefab == null) continue;
+                var tilePrefab = tileData.TilePrefab.GetComponent<TileView>();
+                if (tilePrefab != null)
+                {
+                    var tilePool = new ObjectPool<TileView>(tilePrefab, 20);
+                    _tilePools.Add(tileData.TileType, tilePool);
+                }
+            }
+            Debug.Log($"Initialized {allTileData.Count} tile types with their respective pools.");
         }
 
         private void Start()
         {
+            this.OnInit();
+
             SetupGrid();
         }
 
@@ -174,15 +193,24 @@ namespace _GAME.Scripts.Grid
                 return;
             }
 
-            var tileObj = Instantiate(tileData.TilePrefab, cellObj.transform);
+            if(!this._tilePools.ContainsKey(tileType))
+            {
+                Debug.LogWarning($"No tile pool found for {tileType}. Skipping tile placement.");
+                return;
+            }
+
+            var pool    = this._tilePools[tileType];
+            var tileObj = pool.Spawn(cellObj.transform.position, cellObj.transform.rotation);
+            tileObj.transform.SetParent(cellObj.transform);
             tileObj.transform.localPosition = Vector3.zero;
 
             var tileView = tileObj.GetComponent<TileView>();
             if (tileView != null)
             {
-                tileView.Type        = tileType;
+                tileView.Type         = tileType;
                 tileView.GridPosition = new Vector2Int(col, row); // Note: x=col, y=row
-            }else
+            }
+            else
             {
                 Debug.LogWarning($"Tile prefab for {tileType} does not have a TileView component!");
             }
