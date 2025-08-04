@@ -8,6 +8,8 @@ namespace _GAME.Scripts.Grid
 
     public class GridManager : MonoBehaviour
     {
+        #region FIELDS
+
         [Header("Grid Settings")] [SerializeField] private GameObject cellPrefab;
         [SerializeField]                           private Transform  gridParent;
 
@@ -22,6 +24,8 @@ namespace _GAME.Scripts.Grid
         private       GameObject[,]                              cellObjects;
         private       List<TileDB>                               allTileData => TileManager.Instance.tileDataList;
         private       Dictionary<TileType, ObjectPool<TileView>> _tilePools = new Dictionary<TileType, ObjectPool<TileView>>();
+
+        #endregion
 
         #region UNITY-CALLBACKS
 
@@ -51,6 +55,14 @@ namespace _GAME.Scripts.Grid
 
         public void ClearMatch(TileView tile1, TileView tile2)
         {
+            if (gridData.IsValidPosition(tile1.GridPosition.y, tile1.GridPosition.x))
+            {
+                gridData.cells[tile1.GridPosition.y, tile1.GridPosition.x].isActive = false;
+            }
+            if (gridData.IsValidPosition(tile2.GridPosition.y, tile2.GridPosition.x))
+            {
+                gridData.cells[tile2.GridPosition.y, tile2.GridPosition.x].isActive = false;
+            }
             if (this._tilePools.ContainsKey(tile1.Type))
             {
                 this._tilePools[tile1.Type].ReturnToPool(tile1);
@@ -88,18 +100,16 @@ namespace _GAME.Scripts.Grid
             int realRow = paddedPos.y - 1;
             int realCol = paddedPos.x - 1;
 
-            // Check bounds (for points in the padding area)
-            if (realRow < 0 || realRow >= this.rows || realCol < 0 || realCol >= this.cols)
+            if (realRow >= 0 && realRow < this.rows && realCol >= 0 && realCol < this.cols)
             {
-                // This part requires careful calculation based on your grid's centering logic.
-                // A simple approximation:
-                float x = (realCol + 0.5f - this.cols / 2f) * cellSize;
-                float y = -(realRow + 0.5f - this.rows / 2f) * cellSize;
-                return new Vector3(x, y, 0); // This will need tuning to match your grid layout
+                return gridData.cells[realRow, realCol].worldPos;
             }
-
-            // For points inside the real grid, we can just get the cell's world position.
-            return gridData.cells[realRow, realCol].worldPos;
+            int     clampedRow      = Mathf.Clamp(realRow, 0, this.rows - 1);
+            int     clampedCol      = Mathf.Clamp(realCol, 0, this.cols - 1);
+            Vector3 adjacentCellPos = gridData.cells[clampedRow, clampedCol].worldPos;
+            float   offsetX         = (realCol - clampedCol) * cellSize;
+            float   offsetY         = -(realRow - clampedRow) * cellSize;
+            return adjacentCellPos + new Vector3(offsetX, offsetY, 0);
         }
 
         public void DrawPath(List<Vector2Int> path)
@@ -344,7 +354,6 @@ namespace _GAME.Scripts.Grid
                     if (!IsCellEmpty(new Vector2Int(col, row))) return null; // Obstacle found, return failure
                 }
 
-                // Success! Build the path.
                 path.Add(pos1);
                 path.Add(pos2);
                 return path;
@@ -362,7 +371,6 @@ namespace _GAME.Scripts.Grid
                     if (!IsCellEmpty(new Vector2Int(col, row))) return null; // Obstacle found, return failure
                 }
 
-                // Success! Build the path.
                 path.Add(pos1);
                 path.Add(pos2);
                 return path;
@@ -373,18 +381,16 @@ namespace _GAME.Scripts.Grid
 
         private List<Vector2Int> CheckL_ShapeMatch(Vector2Int pos1, Vector2Int pos2)
         {
-            Vector2Int corner1 = new Vector2Int(pos1.x, pos2.y);
-            Vector2Int corner2 = new Vector2Int(pos2.x, pos1.y);
+            var corner1 = new Vector2Int(pos1.x, pos2.y);
+            var corner2 = new Vector2Int(pos2.x, pos1.y);
 
             if (IsCellEmpty(corner1))
             {
-                // Check for path via corner1. NOTE: The line check itself returns null on failure.
                 var path1 = CheckLineMatch(pos1, corner1);
                 var path2 = CheckLineMatch(corner1, pos2);
 
                 if (path1 != null && path2 != null)
                 {
-                    // Success! Combine the paths. Use Skip(1) to avoid adding the corner twice.
                     return path1.Concat(path2.Skip(1)).ToList();
                 }
             }
