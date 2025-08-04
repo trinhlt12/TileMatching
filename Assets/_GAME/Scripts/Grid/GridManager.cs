@@ -4,6 +4,7 @@ namespace _GAME.Scripts.Grid
     using System.Linq;
     using _GAME.Scripts.Core;
     using _GAME.Scripts.Extensions;
+    using _GAME.Scripts.Level;
     using _GAME.Scripts.Tile;
     using UnityEngine;
 
@@ -14,9 +15,10 @@ namespace _GAME.Scripts.Grid
         [Header("Grid Settings")] [SerializeField] private GameObject cellPrefab;
         [SerializeField]                           private Transform  gridParent;
 
-        [Header("Runtime Grid Info")] [SerializeField] private int   rows;
-        [SerializeField]                               private int   cols;
-        [SerializeField]                               private float cellSize = 1f;
+        private       int       rows;
+        private       int       cols;
+        private       LevelData currentLevelData;
+        private const float     CELL_SIZE = 1f;
 
         [Header("Dependencies")] [SerializeField] private LineDrawer lineDrawer;
 
@@ -43,18 +45,29 @@ namespace _GAME.Scripts.Grid
             }
         }
 
+        [Header("Testing")]
+        [SerializeField] private int levelToTest = 1;
         private void Start()
         {
             this.OnInit();
+            LevelData testLevelData = LevelLoader.LoadLevel(levelToTest);
+            if (testLevelData != null)
+            {
+                SetupGridFromData(testLevelData);
+            }
+            else
+            {
+                Debug.LogError($"Failed to load level {levelToTest}. Please check the level data.");
+            }
             GameManager.OnGameStateChanged += HandleGameStateChange;
 
-            SetupGrid();
+            /*SetupGrid();*/
         }
+
         private void OnDestroy()
         {
             GameManager.OnGameStateChanged -= HandleGameStateChange;
         }
-
 
         #endregion
 
@@ -65,10 +78,23 @@ namespace _GAME.Scripts.Grid
             // ClearOldGrid();
 
             OnInit();
-            SetupGrid();
-
             GameManager.Instance.UpdateGameState(GameState.Playing);
         }
+
+        public void SetupGridFromData(LevelData levelData)
+        {
+            if (levelData == null)
+            {
+                return;
+            }
+
+            this.currentLevelData = levelData;
+            this.rows             = levelData.gridSize.rows;
+            this.cols             = levelData.gridSize.cols;
+
+            InitializeGrid();
+        }
+
         public void ClearMatch(TileView tile1, TileView tile2)
         {
             var cell1 = gridData.GetCell(tile1.GridPosition.y, tile1.GridPosition.x);
@@ -138,8 +164,8 @@ namespace _GAME.Scripts.Grid
             int     clampedRow      = Mathf.Clamp(realRow, 0, this.rows - 1);
             int     clampedCol      = Mathf.Clamp(realCol, 0, this.cols - 1);
             Vector3 adjacentCellPos = gridData.cells[clampedRow, clampedCol].worldPos;
-            float   offsetX         = (realCol - clampedCol) * cellSize;
-            float   offsetY         = -(realRow - clampedRow) * cellSize;
+            float   offsetX         = (realCol - clampedCol) * CELL_SIZE;
+            float   offsetY         = -(realRow - clampedRow) * CELL_SIZE;
             return adjacentCellPos + new Vector3(offsetX, offsetY, 0);
         }
 
@@ -214,7 +240,8 @@ namespace _GAME.Scripts.Grid
                 StartLevel();
             }
         }
-        private void SetupGrid()
+
+        private void InitializeGrid()
         {
             var newRows = rows;
             var newCols = cols;
@@ -231,14 +258,36 @@ namespace _GAME.Scripts.Grid
             this.cols = newCols;
 
             gridData = new GridData(newRows, newCols);
-            GridCalculator.CalculateWorldPositions(gridData, cellSize, Camera.main);
+            GridCalculator.CalculateWorldPositions(gridData, CELL_SIZE, Camera.main);
             cellObjects = new GameObject[newRows, newCols];
 
-            Debug.Log($"Grid initialized: {newRows}x{newCols} cells, Cell size: {cellSize}");
+            Debug.Log($"Grid initialized: {newRows}x{newCols} cells, Cell size: {CELL_SIZE}");
 
-            SpawnEmptyCells(newRows, newCols);
+            SpawnCellsFromLayout();
 
             GenerateAndPlaceTiles();
+        }
+
+        private void SpawnCellsFromLayout()
+        {
+            for (int row = 0; row < this.rows; row++)
+            {
+                for (int col = 0; col < this.cols; col++)
+                {
+                    if (this.currentLevelData.layout[row][col] == '1')
+                    {
+                        Vector3    worldPos = gridData.cells[row, col].worldPos;
+                        GameObject cellObj  = Instantiate(cellPrefab, worldPos, Quaternion.identity, gridParent);
+                        cellObj.name          = $"Cell_{row}_{col}";
+                        cellObjects[row, col] = cellObj;
+                    }
+                    else
+                    {
+                        cellObjects[row, col]             = null;
+                        gridData.cells[row, col].isActive = false;
+                    }
+                }
+            }
         }
 
         private void SpawnEmptyCells(int newRows, int newCols)
@@ -258,7 +307,30 @@ namespace _GAME.Scripts.Grid
 
         private void GenerateAndPlaceTiles()
         {
-            int totalCells = this.rows * this.cols;
+
+            if (this.currentLevelData == null)
+            {
+                return;
+            }
+
+            var validCellPositions = new List<Vector2Int>();
+            for (int row = 0; row < this.rows; row++)
+            {
+                for (int col = 0; col < this.cols; col++)
+                {
+                    if (this.currentLevelData.layout[row][col] == '1')
+                    {
+                        validCellPositions.Add(new Vector2Int(col, row));
+                    }
+                }
+            }
+
+            int totalCells = validCellPositions.Count;
+
+            if (totalCells == 0 || totalCells % 2 != 0)
+            {
+                return;
+            }
 
             var availableTileTypes = allTileData
                 .Where(t => t.TileType != TileType.None)
@@ -273,11 +345,14 @@ namespace _GAME.Scripts.Grid
             int maxPossibleTypes = totalCells / 2;
             int numTypesToUse    = Mathf.Min(availableTileTypes.Count, maxPossibleTypes);
 
+            if (numTypesToUse == 0)
+            {
+                return;
+            }
+
             var selectedTileTypes = availableTileTypes.OrderBy(x => Random.value).Take(numTypesToUse).ToList();
-            Debug.Log($"Will use {numTypesToUse} of tile: " + string.Join(", ", selectedTileTypes));
 
             var tileCounts = new Dictionary<TileType, int>();
-
             foreach (var type in selectedTileTypes)
             {
                 tileCounts[type] = 2;
@@ -290,7 +365,6 @@ namespace _GAME.Scripts.Grid
                 TileType randomType  = selectedTileTypes[randomIndex];
                 tileCounts[randomType] += 2;
             }
-
             var tilesToPlace = new List<TileType>(totalCells);
             foreach (var pair in tileCounts)
             {
@@ -299,27 +373,18 @@ namespace _GAME.Scripts.Grid
                     tilesToPlace.Add(pair.Key);
                 }
             }
-
-            //Fisher-Yates
             for (int i = 0; i < tilesToPlace.Count - 1; i++)
             {
-                int      randomIndex = Random.Range(i, tilesToPlace.Count);
-                TileType temp        = tilesToPlace[i];
-                tilesToPlace[i]           = tilesToPlace[randomIndex];
-                tilesToPlace[randomIndex] = temp;
+                int randomIndex = Random.Range(i, tilesToPlace.Count);
+                (tilesToPlace[i], tilesToPlace[randomIndex]) = (tilesToPlace[randomIndex], tilesToPlace[i]); // C# tuple swap
             }
-
-            int tileIndex = 0;
-            for (int row = 0; row < this.rows; row++)
+            for (int i = 0; i < totalCells; i++)
             {
-                for (int col = 0; col < this.cols; col++)
-                {
-                    SpawnTileAt(row, col, tilesToPlace[tileIndex]);
-                    tileIndex++;
-                }
-            }
+                Vector2Int positionToPlace = validCellPositions[i];
+                TileType   tileToPlace     = tilesToPlace[i];
 
-            Debug.Log("Placed all tiles successfully according to the algorithm.");
+                SpawnTileAt(positionToPlace.y, positionToPlace.x, tileToPlace);
+            }
         }
 
         private void SpawnTileAt(int row, int col, TileType tileType)
@@ -358,7 +423,6 @@ namespace _GAME.Scripts.Grid
                 tileView.Type                              = tileType;
                 tileView.GridPosition                      = new Vector2Int(col, row); // Note: x=col, y=row
                 gridData.cells[row, col].tileViewReference = tileView;
-
             }
             else
             {

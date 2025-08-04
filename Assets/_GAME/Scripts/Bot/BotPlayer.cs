@@ -44,7 +44,6 @@ namespace _GAME.Scripts.Bot
                 else
                 {
                     Debug.Log("BOT: No more valid moves found. Bot stopping.");
-                    // TODO: Gọi hàm thông báo kết thúc game ở đây
                     break;
                 }
             }
