@@ -1,6 +1,8 @@
 // File: GameManager.cs
 using System;
 using _GAME.Scripts.Core;
+using _GAME.Scripts.Grid;
+using _GAME.Scripts.Level;
 using _GAME.Scripts.UI;
 using UnityEngine;
 
@@ -11,6 +13,9 @@ public class GameManager : MonoBehaviour
     public static event Action<GameState> OnGameStateChanged;
 
     private GameState _currentState;
+
+    private int _currentLevel = 1;
+
     public GameState CurrentState
     {
         get => _currentState;
@@ -41,7 +46,12 @@ public class GameManager : MonoBehaviour
     {
         UpdateGameState(GameState.MainMenu);
     }
+    public void StartLevel(int levelNumber)
+    {
+        this._currentLevel = levelNumber;
 
+        UpdateGameState(GameState.LevelSetup);
+    }
     public void UpdateGameState(GameState newState)
     {
         CurrentState = newState;
@@ -55,6 +65,17 @@ public class GameManager : MonoBehaviour
                 break;
             case GameState.LevelSetup:
                 Debug.Log("Game State: Level Setup");
+                UIManager.Instance.CloseDirectly<MainMenuCanvas>();
+                var levelData = LevelLoader.LoadLevel(_currentLevel);
+                if (levelData != null)
+                {
+                    GridManager.Instance.SetupGridFromData(levelData);
+                    UpdateGameState(GameState.Playing);
+                }
+                else
+                {
+                    UpdateGameState(GameState.MainMenu);
+                }
                 break;
             case GameState.Playing:
                 Debug.Log("Game State: Playing");

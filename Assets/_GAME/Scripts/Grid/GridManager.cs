@@ -43,22 +43,11 @@ namespace _GAME.Scripts.Grid
             {
                 Destroy(gameObject);
             }
+            this.OnInit();
         }
 
-        [Header("Testing")]
-        [SerializeField] private int levelToTest = 1;
         private void Start()
         {
-            this.OnInit();
-            LevelData testLevelData = LevelLoader.LoadLevel(levelToTest);
-            if (testLevelData != null)
-            {
-                SetupGridFromData(testLevelData);
-            }
-            else
-            {
-                Debug.LogError($"Failed to load level {levelToTest}. Please check the level data.");
-            }
             GameManager.OnGameStateChanged += HandleGameStateChange;
 
             /*SetupGrid();*/
@@ -73,20 +62,14 @@ namespace _GAME.Scripts.Grid
 
         #region PUBLIC-METHODS
 
-        public void StartLevel()
-        {
-            // ClearOldGrid();
-
-            OnInit();
-            GameManager.Instance.UpdateGameState(GameState.Playing);
-        }
-
         public void SetupGridFromData(LevelData levelData)
         {
             if (levelData == null)
             {
                 return;
             }
+
+            ClearOldGrid();
 
             this.currentLevelData = levelData;
             this.rows             = levelData.gridSize.rows;
@@ -209,6 +192,7 @@ namespace _GAME.Scripts.Grid
 
         private void OnInit()
         {
+            if (_tilePools.Count > 0) return;
             if (cellPrefab == null)
             {
                 Debug.LogError("Cell Prefab is not assigned in GridManager!");
@@ -232,12 +216,50 @@ namespace _GAME.Scripts.Grid
             Debug.Log($"Initialized {allTileData.Count} tile types with their respective pools.");
         }
 
+        private void ClearOldGrid()
+        {
+            Debug.Log("Clearing old grid data and objects...");
+
+            if (gridData != null)
+            {
+                var activeTiles = GetAllActiveTiles();
+                foreach (var tile in activeTiles)
+                {
+                    if (_tilePools.ContainsKey(tile.Type))
+                    {
+                        _tilePools[tile.Type].ReturnToPool(tile);
+                    }
+                    else
+                    {
+                        Destroy(tile.gameObject);
+                    }
+                }
+            }
+
+            if (cellObjects != null)
+            {
+                for (int r = 0; r < cellObjects.GetLength(0); r++)
+                {
+                    for (int c = 0; c < cellObjects.GetLength(1); c++)
+                    {
+                        if (cellObjects[r, c] != null)
+                        {
+                            Destroy(cellObjects[r, c]);
+                        }
+                    }
+                }
+            }
+
+            gridData         = null;
+            cellObjects      = null;
+            currentLevelData = null;
+        }
+
         private void HandleGameStateChange(GameState newState)
         {
             if (newState == GameState.LevelSetup)
             {
                 Debug.Log("Game state changed to LevelSetup. Reinitializing grid.");
-                StartLevel();
             }
         }
 
@@ -307,7 +329,6 @@ namespace _GAME.Scripts.Grid
 
         private void GenerateAndPlaceTiles()
         {
-
             if (this.currentLevelData == null)
             {
                 return;

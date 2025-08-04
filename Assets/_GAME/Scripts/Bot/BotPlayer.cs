@@ -13,12 +13,40 @@ namespace _GAME.Scripts.Bot
         [SerializeField]                          private float moveDelay = 1.0f;
 
         [Header("Dependencies")] [SerializeField] private GridManager gridManager;
+        private                                           Coroutine   _botCoroutine;
+
+        private void OnEnable()
+        {
+            GameManager.OnGameStateChanged += HandleGameStateChange;
+        }
+
+        private void OnDisable()
+        {
+            GameManager.OnGameStateChanged -= HandleGameStateChange;
+        }
 
         private void Start()
         {
             if (isEnabled && gridManager != null && GameManager.Instance.CurrentState == GameState.Playing)
             {
                 StartCoroutine(PlayGameCoroutine());
+            }
+        }
+
+        private void HandleGameStateChange(GameState newState)
+        {
+            if (!isEnabled) return;
+
+            if (newState == GameState.Playing && _botCoroutine == null)
+            {
+                Debug.Log("BOT: Game state is 'Playing'. Starting bot coroutine...");
+                _botCoroutine = StartCoroutine(PlayGameCoroutine());
+            }
+            else if (newState != GameState.Playing && _botCoroutine != null)
+            {
+                Debug.Log("BOT: Game state is no longer 'Playing'. Stopping bot coroutine...");
+                StopCoroutine(_botCoroutine);
+                _botCoroutine = null;
             }
         }
 
@@ -48,6 +76,8 @@ namespace _GAME.Scripts.Bot
                     break;
                 }
             }
+            _botCoroutine = null;
+
         }
 
         private (TileView tile1, TileView tile2, List<Vector2Int> path)? FindValidMove()
