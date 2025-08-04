@@ -88,10 +88,17 @@ namespace _GAME.Scripts.Tile
         private IEnumerator CheckMatch()
         {
             yield return new WaitForSeconds(this._checkDelay);
-            //TODO: path-finding
-            if (GridManager.Instance.IsMatchValid(_selectedTile1, _selectedTile2))
+            var path = GridManager.Instance.IsMatchValid(_selectedTile1, _selectedTile2);
+
+            if (path != null)
             {
                 Debug.Log("MATCH FOUND (Line Match)!");
+                GridManager.Instance.DrawPath(path);
+
+                yield return new WaitForSeconds(0.5f);
+
+                GridManager.Instance.HidePath();
+
                 GridManager.Instance.ClearMatch(_selectedTile1, _selectedTile2);
             }
             else

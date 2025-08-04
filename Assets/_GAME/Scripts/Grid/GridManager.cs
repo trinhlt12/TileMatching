@@ -15,6 +15,8 @@ namespace _GAME.Scripts.Grid
         [SerializeField]                               private int   cols;
         [SerializeField]                               private float cellSize = 1f;
 
+        [Header("Dependencies")] [SerializeField] private LineDrawer lineDrawer;
+
         public static GridManager                                Instance { get; private set; }
         private       GridData                                   gridData;
         private       GameObject[,]                              cellObjects;
@@ -59,30 +61,63 @@ namespace _GAME.Scripts.Grid
             }
         }
 
-        public bool IsMatchValid(TileView tile1, TileView tile2)
+        public List<Vector2Int> IsMatchValid(TileView tile1, TileView tile2)
         {
-            // Rule 0: Tiles must be of the same type.
-            if (tile1.Type != tile2.Type)
+            if (tile1.Type != tile2.Type) return null;
+
+            Vector2Int pos1 = new Vector2Int(tile1.GridPosition.x + 1, tile1.GridPosition.y + 1);
+            Vector2Int pos2 = new Vector2Int(tile2.GridPosition.x + 1, tile2.GridPosition.y + 1);
+
+            // Try to find a path and store it.
+            List<Vector2Int> path;
+
+            path = CheckLineMatch(pos1, pos2);
+            if (path != null) return path;
+
+            path = CheckL_ShapeMatch(pos1, pos2);
+            if (path != null) return path;
+
+            // TODO: The Z/U shape check will go here.
+
+            return null; // No path found
+        }
+
+        public Vector3 GetWorldPositionForPaddedGrid(Vector2Int paddedPos)
+        {
+            // Convert from padded (1-based) to real (0-based)
+            int realRow = paddedPos.y - 1;
+            int realCol = paddedPos.x - 1;
+
+            // Check bounds (for points in the padding area)
+            if (realRow < 0 || realRow >= this.rows || realCol < 0 || realCol >= this.cols)
             {
-                return false;
+                // This part requires careful calculation based on your grid's centering logic.
+                // A simple approximation:
+                float x = (realCol + 0.5f - this.cols / 2f) * cellSize;
+                float y = -(realRow + 0.5f - this.rows / 2f) * cellSize;
+                return new Vector3(x, y, 0); // This will need tuning to match your grid layout
             }
 
-            // Convert real grid coordinates to our virtual "padded grid" coordinates.
-            // The tile at (0,0) in the real grid is at (1,1) in the padded grid.
-            var pos1 = new Vector2Int(tile1.GridPosition.x + 1, tile1.GridPosition.y + 1);
-            var pos2 = new Vector2Int(tile2.GridPosition.x + 1, tile2.GridPosition.y + 1);
+            // For points inside the real grid, we can just get the cell's world position.
+            return gridData.cells[realRow, realCol].worldPos;
+        }
 
-            // Rule 1: Check for a direct line connection (0 turns).
-            if (CheckLineMatch(pos1, pos2))
+        public void DrawPath(List<Vector2Int> path)
+        {
+            if (path == null)
             {
-                return true;
+                lineDrawer.Hide();
+                return;
             }
 
-            // TODO: We will add the other checks here later.
-            // if (CheckL_ShapeMatch(pos1, pos2)) { return true; }
-            // if (CheckZ_U_ShapeMatch(pos1, pos2)) { return true; }
+            // Convert List<Vector2Int> (grid positions) to Vector3[] (world positions)
+            Vector3[] worldPoints = path.Select(p => GetWorldPositionForPaddedGrid(p)).ToArray();
+            lineDrawer.Draw(worldPoints);
+        }
 
-            return false;
+        public void HidePath()
+        {
+            lineDrawer.Hide();
         }
 
         #endregion
@@ -289,24 +324,30 @@ namespace _GAME.Scripts.Grid
             return !gridData.cells[realRow, realCol].isActive;
         }
 
-        private bool CheckLineMatch(Vector2Int pos1, Vector2Int pos2)
+        #endregion
+
+        #region CHECK-MATCHES
+
+        private List<Vector2Int> CheckLineMatch(Vector2Int pos1, Vector2Int pos2)
         {
+            var path = new List<Vector2Int>();
+
             // Check for same column
             if (pos1.x == pos2.x)
             {
-                int col = pos1.x;
-                // Determine the start and end of the path to check.
+                int col  = pos1.x;
                 int minY = Mathf.Min(pos1.y, pos2.y);
                 int maxY = Mathf.Max(pos1.y, pos2.y);
 
                 for (int row = minY + 1; row < maxY; row++)
                 {
-                    if (!IsCellEmpty(new Vector2Int(col, row)))
-                    {
-                        return false; // Found an obstacle.
-                    }
+                    if (!IsCellEmpty(new Vector2Int(col, row))) return null; // Obstacle found, return failure
                 }
-                return true; // Path is clear.
+
+                // Success! Build the path.
+                path.Add(pos1);
+                path.Add(pos2);
+                return path;
             }
 
             // Check for same row
@@ -318,15 +359,49 @@ namespace _GAME.Scripts.Grid
 
                 for (int col = minX + 1; col < maxX; col++)
                 {
-                    if (!IsCellEmpty(new Vector2Int(col, row)))
-                    {
-                        return false; // Found an obstacle.
-                    }
+                    if (!IsCellEmpty(new Vector2Int(col, row))) return null; // Obstacle found, return failure
                 }
-                return true; // Path is clear.
+
+                // Success! Build the path.
+                path.Add(pos1);
+                path.Add(pos2);
+                return path;
             }
 
-            return false; // Not on the same row or column.
+            return null; // Failure
+        }
+
+        private List<Vector2Int> CheckL_ShapeMatch(Vector2Int pos1, Vector2Int pos2)
+        {
+            Vector2Int corner1 = new Vector2Int(pos1.x, pos2.y);
+            Vector2Int corner2 = new Vector2Int(pos2.x, pos1.y);
+
+            if (IsCellEmpty(corner1))
+            {
+                // Check for path via corner1. NOTE: The line check itself returns null on failure.
+                var path1 = CheckLineMatch(pos1, corner1);
+                var path2 = CheckLineMatch(corner1, pos2);
+
+                if (path1 != null && path2 != null)
+                {
+                    // Success! Combine the paths. Use Skip(1) to avoid adding the corner twice.
+                    return path1.Concat(path2.Skip(1)).ToList();
+                }
+            }
+
+            if (IsCellEmpty(corner2))
+            {
+                // Check for path via corner2.
+                var path1 = CheckLineMatch(pos1, corner2);
+                var path2 = CheckLineMatch(corner2, pos2);
+
+                if (path1 != null && path2 != null)
+                {
+                    return path1.Concat(path2.Skip(1)).ToList();
+                }
+            }
+
+            return null; // Failure
         }
 
         #endregion
