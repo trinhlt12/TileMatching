@@ -13,8 +13,9 @@ namespace _GAME.Scripts.Grid
     {
         #region FIELDS
 
-        [Header("Grid Settings")] [SerializeField] private GameObject cellPrefab;
-        [SerializeField]                           private Transform  gridParent;
+        [SerializeField] private GameObject cellPrefab;
+        [SerializeField] private GameObject tilePrefab;
+        [SerializeField] private Transform  gridParent;
 
         private       int       rows;
         private       int       cols;
@@ -23,11 +24,16 @@ namespace _GAME.Scripts.Grid
 
         [Header("Dependencies")] [SerializeField] private LineDrawer lineDrawer;
 
-        public static GridManager                                Instance { get; private set; }
-        private       GridData                                   gridData;
-        private       GameObject[,]                              cellObjects;
-        private       List<TileDB>                               allTileData => TileManager.Instance.tileDataList;
+        public static GridManager   Instance { get; private set; }
+        private       GridData      gridData;
+        private       GameObject[,] cellObjects;
+
+        private List<TileDB> allTileData => TileManager.Instance.tileDataList;
+
+        /*
         private       Dictionary<TileType, ObjectPool<TileView>> _tilePools = new Dictionary<TileType, ObjectPool<TileView>>();
+        */
+        private ObjectPool<TileView> _tilePool;
 
         #endregion
 
@@ -103,13 +109,15 @@ namespace _GAME.Scripts.Grid
             {
                 gridData.cells[tile2.GridPosition.y, tile2.GridPosition.x].isActive = false;
             }
-            if (this._tilePools.ContainsKey(tile1.Type))
+            if (_tilePool != null)
             {
-                this._tilePools[tile1.Type].ReturnToPool(tile1);
+                _tilePool.ReturnToPool(tile1);
+                _tilePool.ReturnToPool(tile2);
             }
-            if (this._tilePools.ContainsKey(tile2.Type))
+            else
             {
-                this._tilePools[tile2.Type].ReturnToPool(tile2);
+                Destroy(tile1.gameObject);
+                Destroy(tile2.gameObject);
             }
         }
 
@@ -193,50 +201,30 @@ namespace _GAME.Scripts.Grid
 
         private void OnInit()
         {
-            if (_tilePools.Count > 0) return;
             if (cellPrefab == null)
             {
                 Debug.LogError("Cell Prefab is not assigned in GridManager!");
             }
 
+            if (tilePrefab == null)
+            {
+                Debug.LogError("Tile Prefab is not assigned in GridManager!");
+            }
             if (gridParent == null)
             {
                 Debug.LogError("Grid Parent Transform is not assigned in GridManager!");
             }
 
-            foreach (var tileData in allTileData)
+            var tileView = this.tilePrefab.GetComponent<TileView>();
+            if (tileView == null)
             {
-                if (tileData.TileType == TileType.None || tileData.TilePrefab == null) continue;
-                var tilePrefab = tileData.TilePrefab.GetComponent<TileView>();
-                if (tilePrefab != null)
-                {
-                    var tilePool = new ObjectPool<TileView>(tilePrefab, 20);
-                    _tilePools.Add(tileData.TileType, tilePool);
-                }
+                Debug.LogError("Tile Prefab does not have a TileView component!");
             }
-            Debug.Log($"Initialized {allTileData.Count} tile types with their respective pools.");
+            this._tilePool = new ObjectPool<TileView>(tileView, 100);
         }
 
         private void ClearOldGrid()
         {
-            Debug.Log("Clearing old grid data and objects...");
-
-            if (gridData != null)
-            {
-                var activeTiles = GetAllActiveTiles();
-                foreach (var tile in activeTiles)
-                {
-                    if (_tilePools.ContainsKey(tile.Type))
-                    {
-                        _tilePools[tile.Type].ReturnToPool(tile);
-                    }
-                    else
-                    {
-                        Destroy(tile.gameObject);
-                    }
-                }
-            }
-
             if (cellObjects != null)
             {
                 for (int r = 0; r < cellObjects.GetLength(0); r++)
@@ -422,24 +410,24 @@ namespace _GAME.Scripts.Grid
                 return;
             }
 
+            var tileObj = this._tilePool.Spawn(cellObj.transform.position, cellObj.transform.rotation);
+            tileObj.transform.SetParent(cellObj.transform);
+            tileObj.transform.localPosition = Vector3.zero;
+
             var tileData = allTileData.Find(t => t.TileType == tileType);
+
             if (tileData == null)
             {
+                Debug.LogError($"Tile data for {tileType} not found!");
+                this._tilePool.ReturnToPool(tileObj);
                 return;
             }
 
-            if (!this._tilePools.ContainsKey(tileType))
+            var spriteRenderer = tileObj.TileVisual.GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null)
             {
-                Debug.LogWarning($"No tile pool found for {tileType}. Skipping tile placement.");
-                return;
+                spriteRenderer.sprite = tileData.TileImage;
             }
-
-            var     pool     = this._tilePools[tileType];
-            Vector3 finalPos = cellObj.transform.position;
-            Vector3 startPos = finalPos + new Vector3(0, 5f, 0);
-
-            var tileObj = pool.Spawn(startPos, cellObj.transform.rotation);
-            tileObj.transform.SetParent(cellObj.transform);
 
             var tileView = tileObj.GetComponent<TileView>();
             if (tileView != null)
@@ -448,18 +436,10 @@ namespace _GAME.Scripts.Grid
                 tileView.GridPosition                      = new Vector2Int(col, row); // Note: x=col, y=row
                 gridData.cells[row, col].tileViewReference = tileView;
             }
-            else
-            {
-                Debug.LogWarning($"Tile prefab for {tileType} does not have a TileView component!");
-            }
 
             gridData.cells[row, col].tileType = tileType;
             gridData.cells[row, col].isActive = true;
             tileObj.name                      = $"Tile_{tileType}_{row}_{col}";
-
-            tileObj.transform.DOMove(finalPos, 0.6f)
-                .SetEase(Ease.OutBounce)
-                .SetDelay(row * 0.04f);
         }
 
         private bool IsCellEmpty(Vector2Int pos)

@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TilePrefab: {fileID: 484354869991794116, guid: 72e20a9034a73424c93486eb4b8bb947, type: 3}
   TileType: 11
-  TileImage: {fileID: 0}
+  TileImage: {fileID: 21300000, guid: bb7bbf99602c3634eb5b8d6be61ee0ac, type: 3}

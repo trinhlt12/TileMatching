@@ -93,6 +93,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26f2c7e34a8a43b883061e080cba314f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TileVisual: {fileID: 8380432615976479682}
   _animator: {fileID: 0}
   _highlight: {fileID: 7318696032645295758}
 --- !u!1 &6230773365728903409

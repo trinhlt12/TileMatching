@@ -5,6 +5,7 @@ namespace _GAME.Scripts.Tile
     [RequireComponent(typeof(Collider2D))]
     public class TileView : MonoBehaviour
     {
+        public GameObject TileVisual;
         public TileType   Type         { get; set; }
         public Vector2Int GridPosition { get; set; }
 
