@@ -6,7 +6,7 @@ namespace _GAME.Scripts.Core
         LevelSetup = 1,
         Playing = 2,
         Paused = 3,
-        LevelComplete = 4,
+        LevelCompleted = 4,
         GameOver = 5,
     }
 }

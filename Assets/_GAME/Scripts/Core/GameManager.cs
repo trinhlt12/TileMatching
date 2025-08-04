@@ -81,46 +81,66 @@ public class GameManager : MonoBehaviour
 
         switch (newState)
         {
-            case GameState.MainMenu:
-                Debug.Log("Game State: Main Menu");
-                UIManager.Instance.CloseAll();
-                UIManager.Instance.Open<MainMenuCanvas>();
-                break;
-            case GameState.LevelSetup:
-                Debug.Log("Game State: Level Setup");
-                UIManager.Instance.CloseDirectly<MainMenuCanvas>();
-                var levelData = LevelLoader.LoadLevel(_currentLevel);
-                if (levelData != null)
-                {
-                    // _timerController.StartTimer(levelData.timeLimit);
-                    GridManager.Instance.SetupGridFromData(levelData);
-                    UpdateGameState(GameState.Playing);
-                }
-                else
-                {
-                    UpdateGameState(GameState.MainMenu);
-                }
-                break;
-            case GameState.Playing:
-                UIManager.Instance.Open<GamePlayCanvas>();
-
-                _timerController.StartTimer(LevelLoader.LoadLevel(_currentLevel).timeLimit);
-                Time.timeScale = 1f;
-                break;
-            case GameState.Paused:
-                Debug.Log("Game State: Paused");
-                Time.timeScale = 0f;
-                break;
-            case GameState.LevelComplete:
-                Debug.Log("Game State: Level Complete");
-                _timerController.StopTimer();
-
-                break;
-            case GameState.GameOver:
-                Debug.Log("Game State: Game Over");
-                _timerController.StopTimer();
-
-                break;
+            case GameState.MainMenu:       this.HandleMainMenu(); break;
+            case GameState.LevelSetup:     this.HandleLevelSetup(); break;
+            case GameState.Playing:        this.HandlePlaying(); break;
+            case GameState.Paused:         this.HandlePaused(); break;
+            case GameState.LevelCompleted: this.HandleLevelCompleted(); break;
+            case GameState.GameOver:       this.HandleGameOver(); break;
         }
     }
+
+    #region GAMESTATE-HANDLERS
+
+    private void HandleMainMenu()
+    {
+        Debug.Log("Game State: Main Menu");
+        UIManager.Instance.CloseAll();
+        UIManager.Instance.Open<MainMenuCanvas>();
+    }
+
+    private void HandleLevelSetup()
+    {
+        Debug.Log("Game State: Level Setup");
+        UIManager.Instance.CloseDirectly<MainMenuCanvas>();
+        var levelData = LevelLoader.LoadLevel(_currentLevel);
+        if (levelData != null)
+        {
+            // _timerController.StartTimer(levelData.timeLimit);
+            GridManager.Instance.SetupGridFromData(levelData);
+            UpdateGameState(GameState.Playing);
+        }
+        else
+        {
+            UpdateGameState(GameState.MainMenu);
+        }
+    }
+
+    private void HandlePlaying()
+    {
+        UIManager.Instance.Open<GamePlayCanvas>();
+
+        _timerController.StartTimer(LevelLoader.LoadLevel(_currentLevel).timeLimit);
+        Time.timeScale = 1f;
+    }
+
+    private void HandlePaused()
+    {
+        Debug.Log("Game State: Paused");
+        Time.timeScale = 0f;
+    }
+
+    private void HandleLevelCompleted()
+    {
+        Debug.Log("Game State: Level Complete");
+        _timerController.StopTimer();
+    }
+
+    private void HandleGameOver()
+    {
+        Debug.Log("Game State: Game Over");
+        _timerController.StopTimer();
+    }
+
+    #endregion
 }
