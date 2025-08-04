@@ -89,7 +89,8 @@ namespace _GAME.Scripts.Grid
             path = CheckL_ShapeMatch(pos1, pos2);
             if (path != null) return path;
 
-            // TODO: The Z/U shape check will go here.
+            path = CheckZ_U_ShapeMatch(pos1, pos2);
+            if (path != null) return path;
 
             return null; // No path found
         }
@@ -408,6 +409,74 @@ namespace _GAME.Scripts.Grid
             }
 
             return null; // Failure
+        }
+
+        private List<Vector2Int> CheckZ_U_ShapeMatch(Vector2Int pos1, Vector2Int pos2)
+        {
+            // --- Scan RIGHT from pos1 ---
+            for (int x = pos1.x + 1; x < this.cols + 2; x++)
+            {
+                var currentPos = new Vector2Int(x, pos1.y);
+                if (!IsCellEmpty(currentPos)) break; // Stop if we hit an obstacle
+
+                // Try to find an L-path from this empty cell to the destination
+                var lPath = CheckL_ShapeMatch(currentPos, pos2);
+                if (lPath != null)
+                {
+                    // SUCCESS! We found a path. Now, construct the full path.
+                    var fullPath = new List<Vector2Int> { pos1 };
+                    fullPath.AddRange(lPath);
+                    return fullPath;
+                }
+            }
+
+            // --- Scan LEFT from pos1 ---
+            for (int x = pos1.x - 1; x >= 0; x--)
+            {
+                var currentPos = new Vector2Int(x, pos1.y);
+                if (!IsCellEmpty(currentPos)) break;
+
+                var lPath = CheckL_ShapeMatch(currentPos, pos2);
+                if (lPath != null)
+                {
+                    var fullPath = new List<Vector2Int> { pos1 };
+                    fullPath.AddRange(lPath);
+                    return fullPath;
+                }
+            }
+
+            // --- Scan DOWN from pos1 ---
+            for (int y = pos1.y + 1; y < this.rows + 2; y++)
+            {
+                var currentPos = new Vector2Int(pos1.x, y);
+                if (!IsCellEmpty(currentPos)) break;
+
+                var lPath = CheckL_ShapeMatch(currentPos, pos2);
+                if (lPath != null)
+                {
+                    var fullPath = new List<Vector2Int> { pos1 };
+                    fullPath.AddRange(lPath);
+                    return fullPath;
+                }
+            }
+
+            // --- Scan UP from pos1 ---
+            for (int y = pos1.y - 1; y >= 0; y--)
+            {
+                var currentPos = new Vector2Int(pos1.x, y);
+                if (!IsCellEmpty(currentPos)) break;
+
+                var lPath = CheckL_ShapeMatch(currentPos, pos2);
+                if (lPath != null)
+                {
+                    var fullPath = new List<Vector2Int> { pos1 };
+                    fullPath.AddRange(lPath);
+                    return fullPath;
+                }
+            }
+
+            // No two-turn path was found in any direction
+            return null;
         }
 
         #endregion
