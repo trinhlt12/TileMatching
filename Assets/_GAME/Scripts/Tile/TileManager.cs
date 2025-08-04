@@ -15,7 +15,7 @@ namespace _GAME.Scripts.Tile
 
         public static event Action<TileView> OnTileClicked;
 
-        [SerializeField] private float    _checkDelay = 1.5f;
+        [SerializeField] private float    _checkDelay;
         private                  TileView _selectedTile1;
         private                  TileView _selectedTile2;
         private                  bool     _isChecking = false;

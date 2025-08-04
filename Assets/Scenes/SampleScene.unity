@@ -160,7 +160,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9619e7614ef4208488e36da34b18ead2, type: 2}
   - {fileID: 11400000, guid: 8a8ded1d1796f1447a646f37c49fe1c8, type: 2}
   - {fileID: 11400000, guid: eba82daa13433a44d846bfcbcefd0f69, type: 2}
-  _checkDelay: 1
+  - {fileID: 11400000, guid: f7fb742efbb607543b6ab6e204f04b02, type: 2}
+  - {fileID: 11400000, guid: 9020d93a43cce804da2959ddb89a14b7, type: 2}
+  - {fileID: 11400000, guid: ccd57c0a3d9f7074c90c6d10c46d202d, type: 2}
+  - {fileID: 11400000, guid: fba134838acd6be46b2043e1ac8e787d, type: 2}
+  _checkDelay: 0.5
 --- !u!4 &31016352
 Transform:
   m_ObjectHideFlags: 0
@@ -205,7 +209,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5692aa6c2f7b4adea57c1d365d93054d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isEnabled: 1
+  isEnabled: 0
   moveDelay: 1
   gridManager: {fileID: 434726595}
 --- !u!4 &155283028
@@ -375,7 +379,6 @@ MonoBehaviour:
   cellPrefab: {fileID: 6276097682223382935, guid: f6d1155308e3fb54088f3fdcdbe60414, type: 3}
   gridParent: {fileID: 746853355}
   lineDrawer: {fileID: 1159541818}
-  levelToTest: 1
 --- !u!4 &434726596
 Transform:
   m_ObjectHideFlags: 0
@@ -1057,12 +1060,12 @@ SceneRoots:
   m_Roots:
   - {fileID: 519420032}
   - {fileID: 1926230886}
-  - {fileID: 434726596}
+  - {fileID: 1093457461}
   - {fileID: 746853355}
-  - {fileID: 31016352}
   - {fileID: 1159541816}
   - {fileID: 155283028}
   - {fileID: 805325885}
-  - {fileID: 1093457461}
   - {fileID: 1914681381}
   - {fileID: 811885792}
+  - {fileID: 434726596}
+  - {fileID: 31016352}

@@ -11,5 +11,10 @@ namespace _GAME.Scripts.Tile
         Pancake = 6,
         Pizza = 7,
         Burger = 8,
+        Egg = 9,
+        BubbleGum = 10,
+        Gift = 11,
+        Banana = 12,
+        Apple = 13,
     }
 }

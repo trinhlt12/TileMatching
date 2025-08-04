@@ -6,6 +6,7 @@ namespace _GAME.Scripts.Grid
     using _GAME.Scripts.Extensions;
     using _GAME.Scripts.Level;
     using _GAME.Scripts.Tile;
+    using DG.Tweening;
     using UnityEngine;
 
     public class GridManager : MonoBehaviour
@@ -433,10 +434,12 @@ namespace _GAME.Scripts.Grid
                 return;
             }
 
-            var pool    = this._tilePools[tileType];
-            var tileObj = pool.Spawn(cellObj.transform.position, cellObj.transform.rotation);
+            var     pool     = this._tilePools[tileType];
+            Vector3 finalPos = cellObj.transform.position;
+            Vector3 startPos = finalPos + new Vector3(0, 5f, 0);
+
+            var tileObj = pool.Spawn(startPos, cellObj.transform.rotation);
             tileObj.transform.SetParent(cellObj.transform);
-            tileObj.transform.localPosition = Vector3.zero;
 
             var tileView = tileObj.GetComponent<TileView>();
             if (tileView != null)
@@ -453,6 +456,10 @@ namespace _GAME.Scripts.Grid
             gridData.cells[row, col].tileType = tileType;
             gridData.cells[row, col].isActive = true;
             tileObj.name                      = $"Tile_{tileType}_{row}_{col}";
+
+            tileObj.transform.DOMove(finalPos, 0.6f)
+                .SetEase(Ease.OutBounce)
+                .SetDelay(row * 0.04f);
         }
 
         private bool IsCellEmpty(Vector2Int pos)
