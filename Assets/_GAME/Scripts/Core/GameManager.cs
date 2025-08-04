@@ -1,6 +1,7 @@
 // File: GameManager.cs
 using System;
 using _GAME.Scripts.Core;
+using _GAME.Scripts.UI;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -49,12 +50,15 @@ public class GameManager : MonoBehaviour
         {
             case GameState.MainMenu:
                 Debug.Log("Game State: Main Menu");
+                UIManager.Instance.CloseAll();
+                UIManager.Instance.Open<MainMenuCanvas>();
                 break;
             case GameState.LevelSetup:
                 Debug.Log("Game State: Level Setup");
                 break;
             case GameState.Playing:
                 Debug.Log("Game State: Playing");
+                UIManager.Instance.CloseAll();
                 Time.timeScale = 1f;
                 break;
             case GameState.Paused:

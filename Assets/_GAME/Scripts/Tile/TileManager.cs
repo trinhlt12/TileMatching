@@ -36,7 +36,7 @@ namespace _GAME.Scripts.Tile
         private void Update()
         {
             //Guard clause
-            /*if (GameManager.Instance.CurrentState != GameState.Playing) return;*/
+            if (GameManager.Instance.CurrentState != GameState.Playing) return;
 
             if (this._isChecking) return;
 

@@ -2,6 +2,7 @@ namespace _GAME.Scripts.Bot
 {
     using System.Collections;
     using System.Collections.Generic;
+    using _GAME.Scripts.Core;
     using _GAME.Scripts.Grid;
     using _GAME.Scripts.Tile;
     using UnityEngine;
@@ -15,7 +16,7 @@ namespace _GAME.Scripts.Bot
 
         private void Start()
         {
-            if (isEnabled && gridManager != null)
+            if (isEnabled && gridManager != null && GameManager.Instance.CurrentState == GameState.Playing)
             {
                 StartCoroutine(PlayGameCoroutine());
             }
