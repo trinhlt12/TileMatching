@@ -89,16 +89,17 @@ namespace _GAME.Scripts.Tile
         {
             yield return new WaitForSeconds(this._checkDelay);
             //TODO: path-finding
-            if (this._selectedTile1.Type == this._selectedTile2.Type)
+            if (GridManager.Instance.IsMatchValid(_selectedTile1, _selectedTile2))
             {
-                Debug.Log($"Tiles match! Type: {this._selectedTile1.Type}");
-                GridManager.Instance.ClearMatch(this._selectedTile1, this._selectedTile2);
+                Debug.Log("MATCH FOUND (Line Match)!");
+                GridManager.Instance.ClearMatch(_selectedTile1, _selectedTile2);
             }
             else
             {
-                Debug.Log($"Tiles do not match! Type1: {this._selectedTile1.Type}, Type2: {this._selectedTile2.Type}");
-                this._selectedTile1.SetHighlight(false);
-                this._selectedTile2.SetHighlight(false);
+                Debug.Log("NOT A MATCH.");
+                // If not a valid match, deselect them.
+                _selectedTile1.SetHighlight(false);
+                _selectedTile2.SetHighlight(false);
             }
 
             this._selectedTile1 = null;

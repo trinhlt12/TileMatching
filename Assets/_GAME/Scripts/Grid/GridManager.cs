@@ -21,6 +21,8 @@ namespace _GAME.Scripts.Grid
         private       List<TileDB>                               allTileData => TileManager.Instance.tileDataList;
         private       Dictionary<TileType, ObjectPool<TileView>> _tilePools = new Dictionary<TileType, ObjectPool<TileView>>();
 
+        #region UNITY-CALLBACKS
+
         private void Awake()
         {
             if (Instance == null)
@@ -33,6 +35,59 @@ namespace _GAME.Scripts.Grid
                 Destroy(gameObject);
             }
         }
+
+        private void Start()
+        {
+            this.OnInit();
+
+            SetupGrid();
+        }
+
+        #endregion
+
+        #region PUBLIC-METHODS
+
+        public void ClearMatch(TileView tile1, TileView tile2)
+        {
+            if (this._tilePools.ContainsKey(tile1.Type))
+            {
+                this._tilePools[tile1.Type].ReturnToPool(tile1);
+            }
+            if (this._tilePools.ContainsKey(tile2.Type))
+            {
+                this._tilePools[tile2.Type].ReturnToPool(tile2);
+            }
+        }
+
+        public bool IsMatchValid(TileView tile1, TileView tile2)
+        {
+            // Rule 0: Tiles must be of the same type.
+            if (tile1.Type != tile2.Type)
+            {
+                return false;
+            }
+
+            // Convert real grid coordinates to our virtual "padded grid" coordinates.
+            // The tile at (0,0) in the real grid is at (1,1) in the padded grid.
+            var pos1 = new Vector2Int(tile1.GridPosition.x + 1, tile1.GridPosition.y + 1);
+            var pos2 = new Vector2Int(tile2.GridPosition.x + 1, tile2.GridPosition.y + 1);
+
+            // Rule 1: Check for a direct line connection (0 turns).
+            if (CheckLineMatch(pos1, pos2))
+            {
+                return true;
+            }
+
+            // TODO: We will add the other checks here later.
+            // if (CheckL_ShapeMatch(pos1, pos2)) { return true; }
+            // if (CheckZ_U_ShapeMatch(pos1, pos2)) { return true; }
+
+            return false;
+        }
+
+        #endregion
+
+        #region PRIVATE-METHODS
 
         private void OnInit()
         {
@@ -48,7 +103,7 @@ namespace _GAME.Scripts.Grid
 
             foreach (var tileData in allTileData)
             {
-                if(tileData.TileType == TileType.None || tileData.TilePrefab == null) continue;
+                if (tileData.TileType == TileType.None || tileData.TilePrefab == null) continue;
                 var tilePrefab = tileData.TilePrefab.GetComponent<TileView>();
                 if (tilePrefab != null)
                 {
@@ -57,13 +112,6 @@ namespace _GAME.Scripts.Grid
                 }
             }
             Debug.Log($"Initialized {allTileData.Count} tile types with their respective pools.");
-        }
-
-        private void Start()
-        {
-            this.OnInit();
-
-            SetupGrid();
         }
 
         private void SetupGrid()
@@ -91,18 +139,6 @@ namespace _GAME.Scripts.Grid
             SpawnEmptyCells(newRows, newCols);
 
             GenerateAndPlaceTiles();
-        }
-
-        public void ClearMatch(TileView tile1, TileView tile2)
-        {
-            if (this._tilePools.ContainsKey(tile1.Type))
-            {
-                this._tilePools[tile1.Type].ReturnToPool(tile1);
-            }
-            if (this._tilePools.ContainsKey(tile2.Type))
-            {
-                this._tilePools[tile2.Type].ReturnToPool(tile2);
-            }
         }
 
         private void SpawnEmptyCells(int newRows, int newCols)
@@ -205,7 +241,7 @@ namespace _GAME.Scripts.Grid
                 return;
             }
 
-            if(!this._tilePools.ContainsKey(tileType))
+            if (!this._tilePools.ContainsKey(tileType))
             {
                 Debug.LogWarning($"No tile pool found for {tileType}. Skipping tile placement.");
                 return;
@@ -231,5 +267,68 @@ namespace _GAME.Scripts.Grid
             gridData.cells[row, col].isActive = true;
             tileObj.name                      = $"Tile_{tileType}_{row}_{col}";
         }
+
+        private bool IsCellEmpty(Vector2Int pos)
+        {
+            // Check if the coordinate is within the outer bounds of the padded grid.
+            // Padded grid dimensions are (rows+2) x (cols+2).
+            if (pos.y < 0 || pos.y >= this.rows + 2 || pos.x < 0 || pos.x >= this.cols + 2)
+            {
+                return false; // Path is trying to go out of bounds.
+            }
+
+            if (pos.y == 0 || pos.y == this.rows + 1 || pos.x == 0 || pos.x == this.cols + 1)
+            {
+                return true;
+            }
+
+            var realRow = pos.y - 1;
+            var realCol = pos.x - 1;
+
+            // The cell is "empty" if the tile at that position is NOT active.
+            return !gridData.cells[realRow, realCol].isActive;
+        }
+
+        private bool CheckLineMatch(Vector2Int pos1, Vector2Int pos2)
+        {
+            // Check for same column
+            if (pos1.x == pos2.x)
+            {
+                int col = pos1.x;
+                // Determine the start and end of the path to check.
+                int minY = Mathf.Min(pos1.y, pos2.y);
+                int maxY = Mathf.Max(pos1.y, pos2.y);
+
+                for (int row = minY + 1; row < maxY; row++)
+                {
+                    if (!IsCellEmpty(new Vector2Int(col, row)))
+                    {
+                        return false; // Found an obstacle.
+                    }
+                }
+                return true; // Path is clear.
+            }
+
+            // Check for same row
+            if (pos1.y == pos2.y)
+            {
+                int row  = pos1.y;
+                int minX = Mathf.Min(pos1.x, pos2.x);
+                int maxX = Mathf.Max(pos1.x, pos2.x);
+
+                for (int col = minX + 1; col < maxX; col++)
+                {
+                    if (!IsCellEmpty(new Vector2Int(col, row)))
+                    {
+                        return false; // Found an obstacle.
+                    }
+                }
+                return true; // Path is clear.
+            }
+
+            return false; // Not on the same row or column.
+        }
+
+        #endregion
     }
 }
