@@ -2,6 +2,7 @@ namespace _GAME.Scripts.Grid
 {
     using System.Collections.Generic;
     using System.Linq;
+    using _GAME.Scripts.Core;
     using _GAME.Scripts.Extensions;
     using _GAME.Scripts.Tile;
     using UnityEngine;
@@ -45,16 +46,45 @@ namespace _GAME.Scripts.Grid
         private void Start()
         {
             this.OnInit();
+            GameManager.OnGameStateChanged += HandleGameStateChange;
 
             SetupGrid();
         }
+        private void OnDestroy()
+        {
+            GameManager.OnGameStateChanged -= HandleGameStateChange;
+        }
+
 
         #endregion
 
         #region PUBLIC-METHODS
 
+        public void StartLevel()
+        {
+            // ClearOldGrid();
+
+            OnInit();
+            SetupGrid();
+
+            GameManager.Instance.UpdateGameState(GameState.Playing);
+        }
         public void ClearMatch(TileView tile1, TileView tile2)
         {
+            var cell1 = gridData.GetCell(tile1.GridPosition.y, tile1.GridPosition.x);
+            if (cell1 != null)
+            {
+                cell1.isActive          = false;
+                cell1.tileViewReference = null;
+            }
+
+            var cell2 = gridData.GetCell(tile2.GridPosition.y, tile2.GridPosition.x);
+            if (cell2 != null)
+            {
+                cell2.isActive          = false;
+                cell2.tileViewReference = null;
+            }
+
             if (gridData.IsValidPosition(tile1.GridPosition.y, tile1.GridPosition.x))
             {
                 gridData.cells[tile1.GridPosition.y, tile1.GridPosition.x].isActive = false;
@@ -126,6 +156,22 @@ namespace _GAME.Scripts.Grid
             lineDrawer.Draw(worldPoints);
         }
 
+        public List<TileView> GetAllActiveTiles()
+        {
+            var activeTiles = new List<TileView>();
+            for (int r = 0; r < this.rows; r++)
+            {
+                for (int c = 0; c < this.cols; c++)
+                {
+                    if (gridData.cells[r, c].isActive && gridData.cells[r, c].tileViewReference != null)
+                    {
+                        activeTiles.Add(gridData.cells[r, c].tileViewReference);
+                    }
+                }
+            }
+            return activeTiles;
+        }
+
         public void HidePath()
         {
             lineDrawer.Hide();
@@ -160,6 +206,14 @@ namespace _GAME.Scripts.Grid
             Debug.Log($"Initialized {allTileData.Count} tile types with their respective pools.");
         }
 
+        private void HandleGameStateChange(GameState newState)
+        {
+            if (newState == GameState.LevelSetup)
+            {
+                Debug.Log("Game state changed to LevelSetup. Reinitializing grid.");
+                StartLevel();
+            }
+        }
         private void SetupGrid()
         {
             var newRows = rows;
@@ -301,8 +355,10 @@ namespace _GAME.Scripts.Grid
             var tileView = tileObj.GetComponent<TileView>();
             if (tileView != null)
             {
-                tileView.Type         = tileType;
-                tileView.GridPosition = new Vector2Int(col, row); // Note: x=col, y=row
+                tileView.Type                              = tileType;
+                tileView.GridPosition                      = new Vector2Int(col, row); // Note: x=col, y=row
+                gridData.cells[row, col].tileViewReference = tileView;
+
             }
             else
             {

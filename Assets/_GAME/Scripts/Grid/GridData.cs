@@ -7,15 +7,17 @@ namespace _GAME.Scripts.Grid
     public class GridCell
     {
         public TileType   tileType;
+        public TileView   tileViewReference;
         public bool       isActive;
         public Vector2Int gridPos;  // Logic position (row, col)
         public Vector3    worldPos; // World position for rendering
 
         public GridCell(int row, int col)
         {
-            gridPos  = new Vector2Int(col, row); // Note: x=col, y=row
-            isActive = false;
-            tileType = 0;
+            gridPos           = new Vector2Int(col, row); // Note: x=col, y=row
+            isActive          = false;
+            tileType          = 0;
+            tileViewReference = null;
         }
     }
 

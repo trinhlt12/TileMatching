@@ -3,6 +3,7 @@ namespace _GAME.Scripts.Tile
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using _GAME.Scripts.Core;
     using _GAME.Scripts.Grid;
     using UnityEngine;
 
@@ -35,6 +36,8 @@ namespace _GAME.Scripts.Tile
         private void Update()
         {
             //Guard clause
+            /*if (GameManager.Instance.CurrentState != GameState.Playing) return;*/
+
             if (this._isChecking) return;
 
             if (Input.GetMouseButtonDown(0))
