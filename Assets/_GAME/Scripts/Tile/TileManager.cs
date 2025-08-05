@@ -31,12 +31,14 @@ namespace _GAME.Scripts.Tile
 
         private GameManager _gameManager;
         private GridManager _gridManager;
+        private MatchFinder _matchFinder;
 
         #region UNITY-CALLBACKS
 
         private void Awake()
         {
             ServiceLocator.Register(this);
+            this._matchFinder = new MatchFinder();
         }
 
         private void Start()
@@ -207,23 +209,10 @@ namespace _GAME.Scripts.Tile
 
         private (TileView tile1, TileView tile2)? FindValidMove()
         {
-            var activeTiles     = this._gridManager.GetAllActiveTiles();
+            var activeTiles     = _gridManager.GetAllActiveTiles();
             var searchableTiles = activeTiles.Where(t => !t.IsLocked).ToList();
 
-            if (searchableTiles.Count < 2) return null;
-            for (var i = 0; i < searchableTiles.Count; i++)
-            {
-                for (var j = i + 1; j < searchableTiles.Count; j++)
-                {
-                    var tile1 = searchableTiles[i];
-                    var tile2 = searchableTiles[j];
-                    if (this._gridManager.IsMatchValid(tile1, tile2) != null)
-                    {
-                        return (tile1, tile2);
-                    }
-                }
-            }
-            return null;
+            return _matchFinder.FindValidMove(searchableTiles);
         }
 
         #endregion

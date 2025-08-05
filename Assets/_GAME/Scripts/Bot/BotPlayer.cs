@@ -17,6 +17,7 @@ namespace _GAME.Scripts.Bot
         private Coroutine   _botCoroutine;
         private GridManager _gridManager;
         private GameManager _gameManager;
+        private MatchFinder _matchFinder;
 
         private void OnEnable()
         {
@@ -27,7 +28,10 @@ namespace _GAME.Scripts.Bot
         {
             GameManager.OnGameStateChanged -= HandleGameStateChange;
         }
-
+        private void Awake()
+        {
+            _matchFinder = new MatchFinder();
+        }
         private void Start()
         {
             this._gridManager = ServiceLocator.Get<GridManager>();
@@ -89,23 +93,13 @@ namespace _GAME.Scripts.Bot
         {
             var activeTiles = _gridManager.GetAllActiveTiles();
 
-            if (activeTiles.Count < 2) return null;
+            var move = _matchFinder.FindValidMove(activeTiles);
 
-            // brute-force O(n^2)
-            for (int i = 0; i < activeTiles.Count; i++)
+            if (move.HasValue)
             {
-                for (int j = i + 1; j < activeTiles.Count; j++)
-                {
-                    TileView tile1 = activeTiles[i];
-                    TileView tile2 = activeTiles[j];
-
-                    var path = _gridManager.IsMatchValid(tile1, tile2);
-
-                    if (path != null)
-                    {
-                        return (tile1, tile2, path);
-                    }
-                }
+                var (tile1, tile2) = move.Value;
+                var path = _gridManager.IsMatchValid(tile1, tile2);
+                return (tile1, tile2, path);
             }
 
             return null;

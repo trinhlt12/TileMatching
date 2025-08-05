@@ -31,8 +31,8 @@ namespace _GAME.Scripts.Grid
 
         [Header("Dependencies")] [SerializeField] private LineDrawer lineDrawer;
 
-        private       GridData      gridData;
-        private       GameObject[,] cellObjects;
+        private GridData      gridData;
+        private GameObject[,] cellObjects;
 
         private List<TileDB> allTileData => this._tileManager.tileDataList;
 
@@ -41,6 +41,7 @@ namespace _GAME.Scripts.Grid
 
         private GameManager _gameManager;
         private TileManager _tileManager;
+        private Pathfinder  _pathfinder;
 
         #endregion
 
@@ -49,6 +50,7 @@ namespace _GAME.Scripts.Grid
         private void Awake()
         {
             ServiceLocator.Register(this);
+            this._pathfinder = new Pathfinder();
 
             this.OnInit();
         }
@@ -233,19 +235,7 @@ namespace _GAME.Scripts.Grid
             Vector2Int pos1 = new Vector2Int(tile1.GridPosition.x + 1, tile1.GridPosition.y + 1);
             Vector2Int pos2 = new Vector2Int(tile2.GridPosition.x + 1, tile2.GridPosition.y + 1);
 
-            // Try to find a path and store it.
-            List<Vector2Int> path;
-
-            path = CheckLineMatch(pos1, pos2);
-            if (path != null) return path;
-
-            path = CheckL_ShapeMatch(pos1, pos2);
-            if (path != null) return path;
-
-            path = CheckZ_U_ShapeMatch(pos1, pos2);
-            if (path != null) return path;
-
-            return null; // No path found
+            return _pathfinder.FindPath(pos1, pos2);
         }
 
         public Vector3 GetWorldPositionForPaddedGrid(Vector2Int paddedPos)
@@ -390,6 +380,8 @@ namespace _GAME.Scripts.Grid
             this.cols = newCols;
 
             gridData = new GridData(newRows, newCols);
+            _pathfinder.SetGridData(gridData);
+
             GridCalculator.CalculateWorldPositions(gridData, CELL_SIZE, Camera.main);
             cellObjects = new GameObject[newRows, newCols];
 
@@ -581,150 +573,6 @@ namespace _GAME.Scripts.Grid
 
             // The cell is "empty" if the tile at that position is NOT active.
             return !gridData.cells[realRow, realCol].isActive;
-        }
-
-        #endregion
-
-        #region CHECK-MATCHES
-
-        private List<Vector2Int> CheckLineMatch(Vector2Int pos1, Vector2Int pos2)
-        {
-            var path = new List<Vector2Int>();
-
-            // Check for same column
-            if (pos1.x == pos2.x)
-            {
-                int col  = pos1.x;
-                int minY = Mathf.Min(pos1.y, pos2.y);
-                int maxY = Mathf.Max(pos1.y, pos2.y);
-
-                for (int row = minY + 1; row < maxY; row++)
-                {
-                    if (!IsCellEmpty(new Vector2Int(col, row))) return null; // Obstacle found, return failure
-                }
-
-                path.Add(pos1);
-                path.Add(pos2);
-                return path;
-            }
-
-            // Check for same row
-            if (pos1.y == pos2.y)
-            {
-                int row  = pos1.y;
-                int minX = Mathf.Min(pos1.x, pos2.x);
-                int maxX = Mathf.Max(pos1.x, pos2.x);
-
-                for (int col = minX + 1; col < maxX; col++)
-                {
-                    if (!IsCellEmpty(new Vector2Int(col, row))) return null; // Obstacle found, return failure
-                }
-
-                path.Add(pos1);
-                path.Add(pos2);
-                return path;
-            }
-
-            return null; // Failure
-        }
-
-        private List<Vector2Int> CheckL_ShapeMatch(Vector2Int pos1, Vector2Int pos2)
-        {
-            var corner1 = new Vector2Int(pos1.x, pos2.y);
-            var corner2 = new Vector2Int(pos2.x, pos1.y);
-
-            if (IsCellEmpty(corner1))
-            {
-                var path1 = CheckLineMatch(pos1, corner1);
-                var path2 = CheckLineMatch(corner1, pos2);
-
-                if (path1 != null && path2 != null)
-                {
-                    return path1.Concat(path2.Skip(1)).ToList();
-                }
-            }
-
-            if (IsCellEmpty(corner2))
-            {
-                // Check for path via corner2.
-                var path1 = CheckLineMatch(pos1, corner2);
-                var path2 = CheckLineMatch(corner2, pos2);
-
-                if (path1 != null && path2 != null)
-                {
-                    return path1.Concat(path2.Skip(1)).ToList();
-                }
-            }
-
-            return null; // Failure
-        }
-
-        private List<Vector2Int> CheckZ_U_ShapeMatch(Vector2Int pos1, Vector2Int pos2)
-        {
-            // --- Scan RIGHT from pos1 ---
-            for (int x = pos1.x + 1; x < this.cols + 2; x++)
-            {
-                var currentPos = new Vector2Int(x, pos1.y);
-                if (!IsCellEmpty(currentPos)) break; // Stop if we hit an obstacle
-
-                // Try to find an L-path from this empty cell to the destination
-                var lPath = CheckL_ShapeMatch(currentPos, pos2);
-                if (lPath != null)
-                {
-                    // SUCCESS! We found a path. Now, construct the full path.
-                    var fullPath = new List<Vector2Int> { pos1 };
-                    fullPath.AddRange(lPath);
-                    return fullPath;
-                }
-            }
-
-            // --- Scan LEFT from pos1 ---
-            for (int x = pos1.x - 1; x >= 0; x--)
-            {
-                var currentPos = new Vector2Int(x, pos1.y);
-                if (!IsCellEmpty(currentPos)) break;
-
-                var lPath = CheckL_ShapeMatch(currentPos, pos2);
-                if (lPath != null)
-                {
-                    var fullPath = new List<Vector2Int> { pos1 };
-                    fullPath.AddRange(lPath);
-                    return fullPath;
-                }
-            }
-
-            // --- Scan DOWN from pos1 ---
-            for (int y = pos1.y + 1; y < this.rows + 2; y++)
-            {
-                var currentPos = new Vector2Int(pos1.x, y);
-                if (!IsCellEmpty(currentPos)) break;
-
-                var lPath = CheckL_ShapeMatch(currentPos, pos2);
-                if (lPath != null)
-                {
-                    var fullPath = new List<Vector2Int> { pos1 };
-                    fullPath.AddRange(lPath);
-                    return fullPath;
-                }
-            }
-
-            // --- Scan UP from pos1 ---
-            for (int y = pos1.y - 1; y >= 0; y--)
-            {
-                var currentPos = new Vector2Int(pos1.x, y);
-                if (!IsCellEmpty(currentPos)) break;
-
-                var lPath = CheckL_ShapeMatch(currentPos, pos2);
-                if (lPath != null)
-                {
-                    var fullPath = new List<Vector2Int> { pos1 };
-                    fullPath.AddRange(lPath);
-                    return fullPath;
-                }
-            }
-
-            // No two-turn path was found in any direction
-            return null;
         }
 
         #endregion
