@@ -1,5 +1,6 @@
 namespace _GAME.Scripts.Tile
 {
+    using DG.Tweening;
     using UnityEngine;
 
     [RequireComponent(typeof(Collider2D))]
@@ -15,11 +16,27 @@ namespace _GAME.Scripts.Tile
         private void OnEnable()
         {
             _highlight.SetActive(false);
+            this.transform.localScale = Vector3.one;
+            /*if (this.TileVisual != null)
+            {
+                this.TileVisual.transform.localScale = Vector3.one;
+            }*/
         }
 
         public void SetHighlight(bool highlight)
         {
             _highlight.SetActive(highlight);
+        }
+
+        public void AnimateSpawn(float delay)
+        {
+            this.transform.localScale = Vector3.zero;
+
+            DOTween.Sequence()
+                .SetDelay(delay)
+                .Append(this.transform.DOScale(1f,
+                    0.5f).SetEase(Ease.OutBack))
+                .Play();
         }
     }
 }

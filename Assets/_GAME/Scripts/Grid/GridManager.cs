@@ -435,6 +435,8 @@ namespace _GAME.Scripts.Grid
                 tileView.Type                              = tileType;
                 tileView.GridPosition                      = new Vector2Int(col, row); // Note: x=col, y=row
                 gridData.cells[row, col].tileViewReference = tileView;
+                float staggerDelay = (row*this.cols + col) * 0.03f;
+                tileView.AnimateSpawn(staggerDelay);
             }
 
             gridData.cells[row, col].tileType = tileType;
