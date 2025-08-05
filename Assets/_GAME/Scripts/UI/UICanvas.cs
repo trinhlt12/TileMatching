@@ -1,10 +1,14 @@
 namespace _GAME.Scripts.UI
 {
+    using System;
+    using _GAME.Scripts.Services;
     using UnityEngine;
 
     public class UICanvas : MonoBehaviour
     {
         [SerializeField] bool isDestroyOnClose = false;
+
+        protected GameManager _gameManager;
 
         private void Awake()
         {
@@ -22,15 +26,18 @@ namespace _GAME.Scripts.UI
             }
         }
 
+        private void Start()
+        {
+            this._gameManager = ServiceLocator.Get<GameManager>();
+        }
+
         public virtual void SetUp()
         {
-
         }
 
         public virtual void Open()
         {
             gameObject.SetActive(true);
-
         }
 
         public virtual void Close(float time)

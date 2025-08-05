@@ -2,9 +2,10 @@ namespace _GAME.Scripts.UI
 {
     using System.Collections.Generic;
     using _GAME.Scripts.Extensions;
+    using _GAME.Scripts.Services;
     using UnityEngine;
 
-    public class UIManager : Singleton<UIManager>
+    public class UIManager : MonoBehaviour
     {
         public                   Dictionary<System.Type, UICanvas> activeCanvases = new Dictionary<System.Type, UICanvas>();
         public                   Dictionary<System.Type, UICanvas> canvasPrefabs  = new Dictionary<System.Type, UICanvas>();
@@ -12,6 +13,7 @@ namespace _GAME.Scripts.UI
 
         private void Awake()
         {
+            ServiceLocator.Register(this);
             var prefabs = Resources.LoadAll<UICanvas>("UI");
             Debug.Log($"UIManager: Found {prefabs.Length} UI prefabs in Resources/UI.");
             foreach (var item in prefabs)

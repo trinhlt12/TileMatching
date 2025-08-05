@@ -4,18 +4,20 @@ namespace _GAME.Scripts.Level
     using System.Collections;
     using _GAME.Scripts.Core;
     using _GAME.Scripts.Grid;
+    using _GAME.Scripts.Services;
     using UnityEngine;
 
     public class LevelManager : MonoBehaviour
     {
         #region FIELDS
-        public static LevelManager Instance { get; private set; }
-
         public LevelData CurrentLevelData { get; private set; }
 
         public int CurrentLevelIndex { get; private set; }
 
         [Header("Level Configuration")] [SerializeField] private int _maxLevelCount;
+
+        private GameManager _gameManager;
+        private GridManager _gridManager;
 
         #endregion
 
@@ -23,15 +25,14 @@ namespace _GAME.Scripts.Level
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            ServiceLocator.Register(this);
+
+        }
+
+        private void Start()
+        {
+            _gameManager      = ServiceLocator.Get<GameManager>();
+            this._gridManager = ServiceLocator.Get<GridManager>();
         }
 
         #endregion
@@ -46,7 +47,7 @@ namespace _GAME.Scripts.Level
             if (levelNumber <= 0 || levelNumber > this._maxLevelCount)
             {
                 Debug.LogError($"Invalid level number: {levelNumber}. Must be between 1 and {this._maxLevelCount}.");
-                GameManager.Instance.UpdateGameState(GameState.MainMenu);
+                this._gameManager.UpdateGameState(GameState.MainMenu);
                 return;
             }
 
@@ -60,7 +61,7 @@ namespace _GAME.Scripts.Level
             {
                 //TODO: Handle the case when all levels are completed
                 Debug.Log("All levels completed! Returning to main menu.");
-                GameManager.Instance.UpdateGameState(GameState.MainMenu);
+                this._gameManager.UpdateGameState(GameState.MainMenu);
             }
             else
             {
@@ -78,7 +79,7 @@ namespace _GAME.Scripts.Level
 
         public void OnDespawn()
         {
-            GridManager.Instance.ClearOldGrid();
+            this._gridManager.ClearOldGrid();
             CurrentLevelData = null;
         }
 
@@ -100,7 +101,7 @@ namespace _GAME.Scripts.Level
             if (request.asset == null)
             {
                 Debug.LogError($"Failed to load level data from path: {path}");
-                GameManager.Instance.UpdateGameState(GameState.MainMenu);
+                this._gameManager.UpdateGameState(GameState.MainMenu);
                 yield break;
             }
             TextAsset jsonFile = request.asset as TextAsset;
@@ -108,7 +109,7 @@ namespace _GAME.Scripts.Level
             CurrentLevelIndex = levelNumber;
 
 
-            float setupAnimationTime = GridManager.Instance.SetupGridFromData(CurrentLevelData);
+            float setupAnimationTime = this._gridManager.SetupGridFromData(CurrentLevelData);
 
             if (setupAnimationTime > 0)
             {
@@ -118,10 +119,10 @@ namespace _GAME.Scripts.Level
             if (CurrentLevelData == null)
             {
                 Debug.LogError($"Failed to parse level data for level {levelNumber}.");
-                GameManager.Instance.UpdateGameState(GameState.MainMenu);
+                this._gameManager.UpdateGameState(GameState.MainMenu);
                 yield break;
             }
-            GameManager.Instance.UpdateGameState(GameState.Playing);
+            this._gameManager.UpdateGameState(GameState.Playing);
         }
 
         #endregion

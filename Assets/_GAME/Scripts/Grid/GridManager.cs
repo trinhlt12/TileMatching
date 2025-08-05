@@ -6,6 +6,7 @@ namespace _GAME.Scripts.Grid
     using _GAME.Scripts.Core;
     using _GAME.Scripts.Extensions;
     using _GAME.Scripts.Level;
+    using _GAME.Scripts.Services;
     using _GAME.Scripts.Tile;
     using DG.Tweening;
     using UnityEngine;
@@ -30,17 +31,16 @@ namespace _GAME.Scripts.Grid
 
         [Header("Dependencies")] [SerializeField] private LineDrawer lineDrawer;
 
-        public static GridManager   Instance { get; private set; }
         private       GridData      gridData;
         private       GameObject[,] cellObjects;
 
-        private List<TileDB> allTileData => TileManager.Instance.tileDataList;
+        private List<TileDB> allTileData => this._tileManager.tileDataList;
 
-        /*
-        private       Dictionary<TileType, ObjectPool<TileView>> _tilePools = new Dictionary<TileType, ObjectPool<TileView>>();
-        */
         private ObjectPool<TileView>       _tilePool;
         private ObjectPool<ParticleSystem> _vfxPool;
+
+        private GameManager _gameManager;
+        private TileManager _tileManager;
 
         #endregion
 
@@ -48,15 +48,8 @@ namespace _GAME.Scripts.Grid
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            ServiceLocator.Register(this);
+
             this.OnInit();
         }
 
@@ -64,11 +57,14 @@ namespace _GAME.Scripts.Grid
         {
             GameManager.OnGameStateChanged += HandleGameStateChange;
 
-            /*SetupGrid();*/
+            _gameManager = ServiceLocator.Get<GameManager>();
+            _tileManager = ServiceLocator.Get<TileManager>();
         }
 
         private void OnDestroy()
         {
+            ServiceLocator.Unregister<GridManager>();
+
             GameManager.OnGameStateChanged -= HandleGameStateChange;
         }
 
@@ -92,10 +88,9 @@ namespace _GAME.Scripts.Grid
             InitializeGrid();
 
             float totalAnimationTime = GenerateAndPlaceTiles();
-            while(TileManager.Instance.IsDeadlocked())
+            while (this._tileManager.IsDeadlocked())
             {
                 Debug.LogWarning("Initial board state is deadlocked. Reshuffling data instantly.");
-                // Gọi thẳng hàm trộn dữ liệu, không cần animation
                 ShuffleTileData(GetAllActiveTiles());
             }
             return totalAnimationTime;
@@ -145,7 +140,7 @@ namespace _GAME.Scripts.Grid
 
         public void CheckDeadlockAndShuffleIfNeeded()
         {
-            if (TileManager.Instance.IsDeadlocked())
+            if (this._tileManager.IsDeadlocked())
             {
                 Debug.LogWarning("DEADLOCK DETECTED! No more valid moves. Initiating auto-shuffle.");
                 StartCoroutine(ShuffleAnimationRoutine());
@@ -154,12 +149,12 @@ namespace _GAME.Scripts.Grid
 
         public IEnumerator ShuffleAnimationRoutine()
         {
-            GameManager.Instance.UpdateGameState(GameState.Shuffling);
+            this._gameManager.UpdateGameState(GameState.Shuffling);
 
             var activeTiles = GetAllActiveTiles();
             if (activeTiles.Count <= 1)
             {
-                GameManager.Instance.UpdateGameState(GameState.Playing);
+                this._gameManager.UpdateGameState(GameState.Playing);
                 yield break;
             }
 
@@ -190,7 +185,7 @@ namespace _GAME.Scripts.Grid
                 tile.IsLocked = false;
             }
 
-            GameManager.Instance.UpdateGameState(GameState.Playing);
+            this._gameManager.UpdateGameState(GameState.Playing);
         }
 
         private void ShuffleTileData(List<TileView> tilesToShuffle)

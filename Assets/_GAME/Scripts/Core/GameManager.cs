@@ -4,19 +4,22 @@ using System;
 using _GAME.Scripts.Core;
 using _GAME.Scripts.Grid;
 using _GAME.Scripts.Level;
+using _GAME.Scripts.Services;
 using _GAME.Scripts.UI;
 using UnityEngine;
 
-[RequireComponent(typeof(TimerController))]
+[RequireComponent(typeof(TimeManager))]
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance { get; private set; }
-
     public static event Action<GameState> OnGameStateChanged;
 
     private GameState _currentState;
 
-    private TimerController _timerController;
+    private TimeManager timeManager;
+
+    private LevelManager _levelManager;
+
+    private UIManager _uiManager;
 
     public GameState CurrentState
     {
@@ -33,37 +36,31 @@ public class GameManager : MonoBehaviour
 
     private void OnEnable()
     {
-        _timerController.OnTimeUp += HandleTimeUp;
+        this.timeManager.OnTimeUp += HandleTimeUp;
     }
 
     private void OnDisable()
     {
-        _timerController.OnTimeUp -= HandleTimeUp;
+        this.timeManager.OnTimeUp -= HandleTimeUp;
     }
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-        _timerController = GetComponent<TimerController>();
+        ServiceLocator.Register(this);
+        this.timeManager = GetComponent<TimeManager>();
     }
 
     private void Start()
     {
+        _levelManager = ServiceLocator.Get<LevelManager>();
+        _uiManager    = ServiceLocator.Get<UIManager>();
         UpdateGameState(GameState.MainMenu);
     }
 
     public void StartLevel(int levelNumber)
     {
         UpdateGameState(GameState.LevelSetup);
-        LevelManager.Instance.LoadLevel(levelNumber);
+        this._levelManager.LoadLevel(levelNumber);
     }
 
     private void HandleTimeUp()
@@ -93,21 +90,21 @@ public class GameManager : MonoBehaviour
     private void HandleMainMenu()
     {
         Debug.Log("Game State: Main Menu");
-        UIManager.Instance.CloseAll();
-        UIManager.Instance.Open<MainMenuCanvas>();
+        this._uiManager.CloseAll();
+        this._uiManager.Open<MainMenuCanvas>();
     }
 
     private void HandleLevelSetup()
     {
-        UIManager.Instance.CloseDirectly<MainMenuCanvas>();
+        this._uiManager.CloseDirectly<MainMenuCanvas>();
     }
 
     private void HandlePlaying()
     {
-        UIManager.Instance.Open<GamePlayCanvas>();
+        this._uiManager.Open<GamePlayCanvas>();
 
-        var timeLimit = LevelManager.Instance.CurrentLevelData.timeLimit;
-        this._timerController.StartTimer(timeLimit);
+        var timeLimit = this._levelManager.CurrentLevelData.timeLimit;
+        this.timeManager.StartTimer(timeLimit);
         Time.timeScale = 1f;
     }
 
@@ -120,19 +117,18 @@ public class GameManager : MonoBehaviour
     private void HandleLevelCompleted()
     {
         Debug.Log("Game State: Level Complete");
-        _timerController.StopTimer();
+        this.timeManager.StopTimer();
     }
 
     private void HandleGameOver()
     {
         Debug.Log("Game State: Game Over");
-        _timerController.StopTimer();
+        this.timeManager.StopTimer();
     }
 
     private void HandleShuffling()
     {
         Debug.Log("Game State: Shuffling... Player input is locked.");
-
     }
 
     #endregion

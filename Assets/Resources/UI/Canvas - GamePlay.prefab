@@ -332,6 +332,7 @@ MonoBehaviour:
   normalTimeColor: {r: 1, g: 1, b: 1, a: 1}
   lowTimeColor: {r: 1, g: 0.53, b: 0.53, a: 1}
   blinkDuration: 0.5
+  pauseButton: {fileID: 5034255589653675175}
 --- !u!1 &6909495969339661222
 GameObject:
   m_ObjectHideFlags: 0

@@ -6,15 +6,13 @@ namespace _GAME.Scripts.Tile
     using System.Linq;
     using _GAME.Scripts.Core;
     using _GAME.Scripts.Grid;
+    using _GAME.Scripts.Services;
     using DG.Tweening;
     using UnityEngine;
 
     public class TileManager : MonoBehaviour
     {
-        public List<TileDB> tileDataList;
-
-        public static TileManager Instance { get; private set; }
-
+        public List<TileDB>                  tileDataList;
         public static event Action<TileView> OnTileClicked;
 
         [SerializeField] private float    _checkDelay;
@@ -31,25 +29,26 @@ namespace _GAME.Scripts.Tile
         private TileView  _hintedTile1;
         private TileView  _hintedTile2;
 
+        private GameManager _gameManager;
+        private GridManager _gridManager;
+
         #region UNITY-CALLBACKS
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            ServiceLocator.Register(this);
+        }
+
+        private void Start()
+        {
+            this._gameManager = ServiceLocator.Get<GameManager>();
+            this._gridManager = ServiceLocator.Get<GridManager>();
         }
 
         private void Update()
         {
             //Guard clause
-            if (GameManager.Instance.CurrentState != GameState.Playing) return;
+            if (this._gameManager.CurrentState != GameState.Playing) return;
 
             if (Input.GetMouseButtonDown(0))
             {
@@ -105,7 +104,7 @@ namespace _GAME.Scripts.Tile
                 _selectedTile2 = chosenTile;
                 _selectedTile2.SetHighlight(true);
 
-                var path = GridManager.Instance.IsMatchValid(_selectedTile1, _selectedTile2);
+                var path = this._gridManager.IsMatchValid(_selectedTile1, _selectedTile2);
 
                 if (path != null)
                 {
@@ -196,19 +195,19 @@ namespace _GAME.Scripts.Tile
 
         private IEnumerator ProcessMatchAnimation(TileView tile1, TileView tile2, List<Vector2Int> path)
         {
-            GridManager.Instance.DrawPath(path);
+            this._gridManager.DrawPath(path);
 
             yield return new WaitForSeconds(0.3f);
 
-            GridManager.Instance.HidePath();
-            GridManager.Instance.ClearMatch(tile1, tile2);
+            this._gridManager.HidePath();
+            this._gridManager.ClearMatch(tile1, tile2);
             yield return null;
-            GridManager.Instance.CheckDeadlockAndShuffleIfNeeded();
+            this._gridManager.CheckDeadlockAndShuffleIfNeeded();
         }
 
         private (TileView tile1, TileView tile2)? FindValidMove()
         {
-            var activeTiles     = GridManager.Instance.GetAllActiveTiles();
+            var activeTiles     = this._gridManager.GetAllActiveTiles();
             var searchableTiles = activeTiles.Where(t => !t.IsLocked).ToList();
 
             if (searchableTiles.Count < 2) return null;
@@ -218,7 +217,7 @@ namespace _GAME.Scripts.Tile
                 {
                     var tile1 = searchableTiles[i];
                     var tile2 = searchableTiles[j];
-                    if (GridManager.Instance.IsMatchValid(tile1, tile2) != null)
+                    if (this._gridManager.IsMatchValid(tile1, tile2) != null)
                     {
                         return (tile1, tile2);
                     }
