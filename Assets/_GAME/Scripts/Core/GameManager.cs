@@ -18,8 +18,6 @@ public class GameManager : MonoBehaviour
 
     private TimerController _timerController;
 
-    private int _currentLevel = 1;
-
     public GameState CurrentState
     {
         get => _currentState;
@@ -64,9 +62,8 @@ public class GameManager : MonoBehaviour
 
     public void StartLevel(int levelNumber)
     {
-        this._currentLevel = levelNumber;
-
         UpdateGameState(GameState.LevelSetup);
+        LevelManager.Instance.LoadLevel(levelNumber);
     }
 
     private void HandleTimeUp()
@@ -101,26 +98,15 @@ public class GameManager : MonoBehaviour
 
     private void HandleLevelSetup()
     {
-        Debug.Log("Game State: Level Setup");
         UIManager.Instance.CloseDirectly<MainMenuCanvas>();
-        var levelData = LevelLoader.LoadLevel(_currentLevel);
-        if (levelData != null)
-        {
-            // _timerController.StartTimer(levelData.timeLimit);
-            GridManager.Instance.SetupGridFromData(levelData);
-            UpdateGameState(GameState.Playing);
-        }
-        else
-        {
-            UpdateGameState(GameState.MainMenu);
-        }
     }
 
     private void HandlePlaying()
     {
         UIManager.Instance.Open<GamePlayCanvas>();
 
-        _timerController.StartTimer(LevelLoader.LoadLevel(_currentLevel).timeLimit);
+        var timeLimit = LevelManager.Instance.CurrentLevelData.timeLimit;
+        this._timerController.StartTimer(timeLimit);
         Time.timeScale = 1f;
     }
 

@@ -223,7 +223,7 @@ namespace _GAME.Scripts.Grid
             this._tilePool = new ObjectPool<TileView>(tileView, 100);
         }
 
-        private void ClearOldGrid()
+        public void ClearOldGrid()
         {
             if (cellObjects != null)
             {
