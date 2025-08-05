@@ -17,6 +17,9 @@ namespace _GAME.Scripts.Grid
         [SerializeField] private GameObject tilePrefab;
         [SerializeField] private Transform  gridParent;
 
+        public const float SPAWN_ANIMATION_DURATION = 0.5f;
+        public const float SPAWN_STAGGER_PER_TILE   = 0.03f;
+
         private       int       rows;
         private       int       cols;
         private       LevelData currentLevelData;
@@ -69,11 +72,11 @@ namespace _GAME.Scripts.Grid
 
         #region PUBLIC-METHODS
 
-        public void SetupGridFromData(LevelData levelData)
+        public float SetupGridFromData(LevelData levelData)
         {
             if (levelData == null)
             {
-                return;
+                return 0f;
             }
 
             ClearOldGrid();
@@ -83,6 +86,9 @@ namespace _GAME.Scripts.Grid
             this.cols             = levelData.gridSize.cols;
 
             InitializeGrid();
+
+            float totalAnimationTime = GenerateAndPlaceTiles();
+            return totalAnimationTime;
         }
 
         public void ClearMatch(TileView tile1, TileView tile2)
@@ -275,8 +281,6 @@ namespace _GAME.Scripts.Grid
             Debug.Log($"Grid initialized: {newRows}x{newCols} cells, Cell size: {CELL_SIZE}");
 
             SpawnCellsFromLayout();
-
-            GenerateAndPlaceTiles();
         }
 
         private void SpawnCellsFromLayout()
@@ -316,13 +320,8 @@ namespace _GAME.Scripts.Grid
             Debug.Log($"Spawned {newRows * newCols} empty cells successfully!");
         }
 
-        private void GenerateAndPlaceTiles()
+        private float GenerateAndPlaceTiles()
         {
-            if (this.currentLevelData == null)
-            {
-                return;
-            }
-
             var validCellPositions = new List<Vector2Int>();
             for (int row = 0; row < this.rows; row++)
             {
@@ -339,7 +338,7 @@ namespace _GAME.Scripts.Grid
 
             if (totalCells == 0 || totalCells % 2 != 0)
             {
-                return;
+                return 0f;
             }
 
             var availableTileTypes = allTileData
@@ -349,7 +348,7 @@ namespace _GAME.Scripts.Grid
 
             if (availableTileTypes.Count == 0)
             {
-                return;
+                return 0f;
             }
 
             int maxPossibleTypes = totalCells / 2;
@@ -357,7 +356,7 @@ namespace _GAME.Scripts.Grid
 
             if (numTypesToUse == 0)
             {
-                return;
+                return 0f;
             }
 
             var selectedTileTypes = availableTileTypes.OrderBy(x => Random.value).Take(numTypesToUse).ToList();
@@ -393,11 +392,14 @@ namespace _GAME.Scripts.Grid
                 Vector2Int positionToPlace = validCellPositions[i];
                 TileType   tileToPlace     = tilesToPlace[i];
 
-                SpawnTileAt(positionToPlace.y, positionToPlace.x, tileToPlace);
+                SpawnTileAt(positionToPlace.y, positionToPlace.x, tileToPlace, i);
             }
+            float lastTileDelay      = (totalCells - 1) * SPAWN_STAGGER_PER_TILE;
+            float totalAnimationTime = lastTileDelay + SPAWN_ANIMATION_DURATION;
+            return totalAnimationTime;
         }
 
-        private void SpawnTileAt(int row, int col, TileType tileType)
+        private void SpawnTileAt(int row, int col, TileType tileType, int staggerIndex)
         {
             if (!this.gridData.IsValidPosition(row, col))
             {
@@ -423,7 +425,7 @@ namespace _GAME.Scripts.Grid
                 return;
             }
 
-            var spriteRenderer = tileObj.TileVisual.GetComponent<SpriteRenderer>();
+            var spriteRenderer = tileObj.TileRenderer.GetComponent<SpriteRenderer>();
             if (spriteRenderer != null)
             {
                 spriteRenderer.sprite = tileData.TileImage;
@@ -435,7 +437,8 @@ namespace _GAME.Scripts.Grid
                 tileView.Type                              = tileType;
                 tileView.GridPosition                      = new Vector2Int(col, row); // Note: x=col, y=row
                 gridData.cells[row, col].tileViewReference = tileView;
-                float staggerDelay = (row*this.cols + col) * 0.03f;
+
+                float staggerDelay = staggerIndex * SPAWN_STAGGER_PER_TILE;
                 tileView.AnimateSpawn(staggerDelay);
             }
 

@@ -31,8 +31,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2106301630259600482}
-  - {fileID: 5679189780025355407}
+  - {fileID: 1934723848346416662}
   - {fileID: 1192742402663862353}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -93,9 +92,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26f2c7e34a8a43b883061e080cba314f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TileVisual: {fileID: 8380432615976479682}
+  TileVisual: {fileID: 2589090767116776522}
+  TileRenderer: {fileID: 8380432615976479682}
   _animator: {fileID: 0}
   _highlight: {fileID: 7318696032645295758}
+--- !u!1 &2589090767116776522
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1934723848346416662}
+  m_Layer: 6
+  m_Name: TileVisual
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1934723848346416662
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2589090767116776522}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2106301630259600482}
+  - {fileID: 5679189780025355407}
+  m_Father: {fileID: 7339071773869593080}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6230773365728903409
 GameObject:
   m_ObjectHideFlags: 0
@@ -121,12 +154,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6230773365728903409}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 7339071773869593080}
+  m_Father: {fileID: 1934723848346416662}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &6496047044351598819
 SpriteRenderer:
@@ -294,7 +327,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 7339071773869593080}
+  m_Father: {fileID: 1934723848346416662}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &8402312924537227388
 SpriteRenderer:

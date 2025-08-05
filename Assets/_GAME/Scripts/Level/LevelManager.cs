@@ -87,7 +87,7 @@ namespace _GAME.Scripts.Level
         private IEnumerator LoadLevelCoroutine(int levelNumber)
         {
             OnDespawn();
-            var path = $"Levels/Level_{levelNumber}";
+            var path = $"Levels/level_{levelNumber}";
             ResourceRequest request = Resources.LoadAsync<TextAsset>(path);
 
             while (!request.isDone)
@@ -107,14 +107,20 @@ namespace _GAME.Scripts.Level
             CurrentLevelData  = JsonUtility.FromJson<LevelData>(jsonFile.text);
             CurrentLevelIndex = levelNumber;
 
+
+            float setupAnimationTime = GridManager.Instance.SetupGridFromData(CurrentLevelData);
+
+            if (setupAnimationTime > 0)
+            {
+                yield return new WaitForSeconds(setupAnimationTime);
+            }
+
             if (CurrentLevelData == null)
             {
                 Debug.LogError($"Failed to parse level data for level {levelNumber}.");
                 GameManager.Instance.UpdateGameState(GameState.MainMenu);
                 yield break;
             }
-
-            GridManager.Instance.SetupGridFromData(CurrentLevelData);
             GameManager.Instance.UpdateGameState(GameState.Playing);
         }
 

@@ -1,5 +1,6 @@
 namespace _GAME.Scripts.Tile
 {
+    using _GAME.Scripts.Grid;
     using DG.Tweening;
     using UnityEngine;
 
@@ -7,6 +8,7 @@ namespace _GAME.Scripts.Tile
     public class TileView : MonoBehaviour
     {
         public GameObject TileVisual;
+        public GameObject TileRenderer;
         public TileType   Type         { get; set; }
         public Vector2Int GridPosition { get; set; }
 
@@ -16,11 +18,10 @@ namespace _GAME.Scripts.Tile
         private void OnEnable()
         {
             _highlight.SetActive(false);
-            this.transform.localScale = Vector3.one;
-            /*if (this.TileVisual != null)
+            if (this.TileVisual != null)
             {
                 this.TileVisual.transform.localScale = Vector3.one;
-            }*/
+            }
         }
 
         public void SetHighlight(bool highlight)
@@ -30,12 +31,12 @@ namespace _GAME.Scripts.Tile
 
         public void AnimateSpawn(float delay)
         {
-            this.transform.localScale = Vector3.zero;
+            this.TileVisual.transform.localScale = Vector3.zero;
 
             DOTween.Sequence()
                 .SetDelay(delay)
-                .Append(this.transform.DOScale(1f,
-                    0.5f).SetEase(Ease.OutBack))
+                .Append(this.TileVisual.transform.DOScale(1f,
+                    GridManager.SPAWN_ANIMATION_DURATION).SetEase(Ease.OutBack))
                 .Play();
         }
     }
