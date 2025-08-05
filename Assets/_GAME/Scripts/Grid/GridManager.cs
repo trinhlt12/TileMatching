@@ -17,6 +17,9 @@ namespace _GAME.Scripts.Grid
         [SerializeField] private GameObject tilePrefab;
         [SerializeField] private Transform  gridParent;
 
+        [Header("VFX")]
+        [SerializeField] private GameObject matchVFXPrefab;
+
         public const float SPAWN_ANIMATION_DURATION = 0.5f;
         public const float SPAWN_STAGGER_PER_TILE   = 0.03f;
 
@@ -37,6 +40,7 @@ namespace _GAME.Scripts.Grid
         private       Dictionary<TileType, ObjectPool<TileView>> _tilePools = new Dictionary<TileType, ObjectPool<TileView>>();
         */
         private ObjectPool<TileView> _tilePool;
+        private ObjectPool<ParticleSystem> _vfxPool;
 
         #endregion
 
@@ -93,6 +97,9 @@ namespace _GAME.Scripts.Grid
 
         public void ClearMatch(TileView tile1, TileView tile2)
         {
+            PlayVFXAt(tile1.transform.position);
+            PlayVFXAt(tile2.transform.position);
+
             var cell1 = gridData.GetCell(tile1.GridPosition.y, tile1.GridPosition.x);
             if (cell1 != null)
             {
@@ -117,6 +124,9 @@ namespace _GAME.Scripts.Grid
             }
             if (_tilePool != null)
             {
+                tile1.gameObject.SetActive(false);
+                tile2.gameObject.SetActive(false);
+
                 _tilePool.ReturnToPool(tile1);
                 _tilePool.ReturnToPool(tile2);
             }
@@ -127,6 +137,11 @@ namespace _GAME.Scripts.Grid
             }
         }
 
+        public void PlayVFXAt(Vector3 position)
+        {
+            if(this._vfxPool == null) return;
+            var vfxInstance = this._vfxPool.Spawn(position, Quaternion.identity);
+        }
         public List<Vector2Int> IsMatchValid(TileView tile1, TileView tile2)
         {
             if (tile1.Type != tile2.Type) return null;
@@ -227,6 +242,23 @@ namespace _GAME.Scripts.Grid
                 Debug.LogError("Tile Prefab does not have a TileView component!");
             }
             this._tilePool = new ObjectPool<TileView>(tileView, 100);
+            if (this.matchVFXPrefab == null)
+            {
+                Debug.LogError("Match VFX Prefab is not assigned in GridManager!");
+            }
+            else
+            {
+                var particleSystem = this.matchVFXPrefab.GetComponent<ParticleSystem>();
+                if (particleSystem != null)
+                {
+                    this._vfxPool = new ObjectPool<ParticleSystem>(particleSystem, 20);
+                }
+                else
+                {
+                    Debug.LogError("Match VFX Prefab does not have a ParticleSystem component!");
+                }
+            }
+
         }
 
         public void ClearOldGrid()

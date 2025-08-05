@@ -3,7 +3,7 @@ namespace _GAME.Scripts.Extensions
     using System.Collections.Generic;
     using UnityEngine;
 
-    public class ObjectPool<T> where T : MonoBehaviour
+    public class ObjectPool<T> where T : Component
     {
         private Queue<T> _objectPool = new();
         private T        _objectPrefab;

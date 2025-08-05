@@ -379,6 +379,7 @@ MonoBehaviour:
   cellPrefab: {fileID: 6276097682223382935, guid: f6d1155308e3fb54088f3fdcdbe60414, type: 3}
   tilePrefab: {fileID: 1438165929509641080, guid: 33f96bc6bd830814bbe87401d16c4e43, type: 3}
   gridParent: {fileID: 746853355}
+  matchVFXPrefab: {fileID: 4035903591278710484, guid: aa122f157eac1c8428ae5db8a315ccd8, type: 3}
   lineDrawer: {fileID: 1159541818}
 --- !u!4 &434726596
 Transform:
