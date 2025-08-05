@@ -11,6 +11,7 @@ namespace _GAME.Scripts.Tile
         public GameObject TileRenderer;
         public TileType   Type         { get; set; }
         public Vector2Int GridPosition { get; set; }
+        public bool IsLocked { get; set; }
 
         [SerializeField] private Animator   _animator;
         [SerializeField] private GameObject _highlight;
@@ -22,6 +23,7 @@ namespace _GAME.Scripts.Tile
             {
                 this.TileVisual.transform.localScale = Vector3.one;
             }
+            IsLocked = false;
         }
 
         public void SetHighlight(bool highlight)

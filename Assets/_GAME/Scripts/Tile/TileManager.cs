@@ -18,7 +18,9 @@ namespace _GAME.Scripts.Tile
         [SerializeField] private float    _checkDelay;
         private                  TileView _selectedTile1;
         private                  TileView _selectedTile2;
+        /*
         private                  bool     _isChecking = false;
+        */
 
         private void Awake()
         {
@@ -38,8 +40,6 @@ namespace _GAME.Scripts.Tile
             //Guard clause
             if (GameManager.Instance.CurrentState != GameState.Playing) return;
 
-            if (this._isChecking) return;
-
             if (Input.GetMouseButtonDown(0))
             {
                 var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -47,7 +47,7 @@ namespace _GAME.Scripts.Tile
                 if (hit.collider != null)
                 {
                     TileView chosenTile = hit.collider.GetComponent<TileView>();
-                    if (chosenTile != null)
+                    if (chosenTile != null && !chosenTile.IsLocked)
                     {
                         Debug.Log($"Clicked on a tile! Type: {chosenTile.Type}, Position: {chosenTile.GridPosition}");
                         //TODO: abcxyz
@@ -60,61 +60,67 @@ namespace _GAME.Scripts.Tile
 
         private void HandleTileSelection(TileView chosenTile)
         {
-            //case 1
-            if (this._selectedTile1 == chosenTile)
+            if (_selectedTile1 == chosenTile)
             {
-                Debug.Log("Clicked on the same tile again, deselecting.");
                 _selectedTile1.SetHighlight(false);
                 _selectedTile1 = null;
                 return;
             }
 
-            //case 2
-            if (this._selectedTile1 == null)
+            if (_selectedTile1 == null)
             {
-                this._selectedTile1 = chosenTile;
-                this._selectedTile1.SetHighlight(true);
+                _selectedTile1 = chosenTile;
+                _selectedTile1.SetHighlight(true);
             }
-            //case 3
             else
             {
-                this._selectedTile2 = chosenTile;
-                this._selectedTile2.SetHighlight(true);
+                _selectedTile2 = chosenTile;
+                _selectedTile2.SetHighlight(true);
 
-                //start checking process:
-                this._isChecking = true;
-                //TODO: checking with coroutine
-                StartCoroutine(CheckMatch());
+                var path = GridManager.Instance.IsMatchValid(_selectedTile1, _selectedTile2);
+
+                if (path != null)
+                {
+                    _selectedTile1.IsLocked = true;
+                    _selectedTile2.IsLocked = true;
+
+                    StartCoroutine(ProcessMatchAnimation(_selectedTile1, _selectedTile2, path));
+                }
+                else
+                {
+                    StartCoroutine(ProcessInvalidMatch(_selectedTile1, _selectedTile2));
+                }
+                _selectedTile1 = null;
+                _selectedTile2 = null;
             }
         }
 
-        private IEnumerator CheckMatch()
+        private IEnumerator ProcessInvalidMatch(TileView tile1, TileView tile2)
         {
-            yield return new WaitForSeconds(this._checkDelay);
-            var path = GridManager.Instance.IsMatchValid(_selectedTile1, _selectedTile2);
+            yield return new WaitForSeconds(0.5f);
 
-            if (path != null)
+            if (tile1 != null && tile1 != _selectedTile1)
             {
-                Debug.Log("MATCH FOUND (Line Match)!");
-                GridManager.Instance.DrawPath(path);
-
-                yield return new WaitForSeconds(0.5f);
-
-                GridManager.Instance.HidePath();
-
-                GridManager.Instance.ClearMatch(_selectedTile1, _selectedTile2);
+                tile1.SetHighlight(false);
             }
-            else
+            if (tile2 != null && tile2 != _selectedTile1)
             {
-                Debug.Log("NOT A MATCH.");
-                // If not a valid match, deselect them.
-                _selectedTile1.SetHighlight(false);
-                _selectedTile2.SetHighlight(false);
+                tile2.SetHighlight(false);
             }
-
-            this._selectedTile1 = null;
-            this._selectedTile2 = null;
-            this._isChecking    = false;
         }
+
+        private IEnumerator ProcessMatchAnimation(TileView tile1, TileView tile2, List<Vector2Int> path)
+        {
+            /*tile1.SetHighlight(false);
+            tile2.SetHighlight(false);*/
+
+            GridManager.Instance.DrawPath(path);
+
+            yield return new WaitForSeconds(0.3f);
+
+            GridManager.Instance.HidePath();
+            GridManager.Instance.ClearMatch(tile1, tile2);
+        }
+
     }
 }
