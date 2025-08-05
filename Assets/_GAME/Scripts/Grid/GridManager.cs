@@ -34,7 +34,8 @@ namespace _GAME.Scripts.Grid
         private GridData      gridData;
         private GameObject[,] cellObjects;
 
-        private List<TileDB> allTileData => this._tileManager.tileDataList;
+        private List<TileDB>   allTileData => this._tileManager.tileDataList;
+        private List<TileView> _activeTiles = new List<TileView>();
 
         private ObjectPool<TileView>       _tilePool;
         private ObjectPool<ParticleSystem> _vfxPool;
@@ -106,14 +107,16 @@ namespace _GAME.Scripts.Grid
             var cell1 = gridData.GetCell(tile1.GridPosition.y, tile1.GridPosition.x);
             if (cell1 != null)
             {
-                cell1.isActive          = false;
+                cell1.isActive = false;
+                _activeTiles.Remove(tile1);
                 cell1.tileViewReference = null;
             }
 
             var cell2 = gridData.GetCell(tile2.GridPosition.y, tile2.GridPosition.x);
             if (cell2 != null)
             {
-                cell2.isActive          = false;
+                cell2.isActive = false;
+                this._activeTiles.Remove(tile2);
                 cell2.tileViewReference = null;
             }
 
@@ -271,7 +274,7 @@ namespace _GAME.Scripts.Grid
 
         public List<TileView> GetAllActiveTiles()
         {
-            var activeTiles = new List<TileView>();
+            /*var activeTiles = new List<TileView>();
             for (int r = 0; r < this.rows; r++)
             {
                 for (int c = 0; c < this.cols; c++)
@@ -282,7 +285,8 @@ namespace _GAME.Scripts.Grid
                     }
                 }
             }
-            return activeTiles;
+            return activeTiles;*/
+            return this._activeTiles;
         }
 
         public void HidePath()
@@ -349,7 +353,7 @@ namespace _GAME.Scripts.Grid
                     }
                 }
             }
-
+            _activeTiles.Clear();
             gridData         = null;
             cellObjects      = null;
             currentLevelData = null;
@@ -545,6 +549,7 @@ namespace _GAME.Scripts.Grid
                 tileView.GridPosition                      = new Vector2Int(col, row); // Note: x=col, y=row
                 gridData.cells[row, col].tileViewReference = tileView;
 
+                _activeTiles.Add(tileView);
                 float staggerDelay = staggerIndex * SPAWN_STAGGER_PER_TILE;
                 tileView.AnimateSpawn(staggerDelay);
             }
