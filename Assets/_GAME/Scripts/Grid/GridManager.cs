@@ -21,8 +21,9 @@ namespace _GAME.Scripts.Grid
 
         [Header("VFX")] [SerializeField] private GameObject matchVFXPrefab;
 
-        public const float SPAWN_ANIMATION_DURATION = 0.5f;
-        public const float SPAWN_STAGGER_PER_TILE   = 0.03f;
+        public const  float SPAWN_ANIMATION_DURATION = 0.5f;
+        public const  float SPAWN_STAGGER_PER_TILE   = 0.03f;
+        private const float CAMERA_PADDING           = 2f;
 
         private       int       rows;
         private       int       cols;
@@ -43,6 +44,7 @@ namespace _GAME.Scripts.Grid
         private GameManager _gameManager;
         private TileManager _tileManager;
         private Pathfinder  _pathfinder;
+        private CameraController _cameraController;
 
         #endregion
 
@@ -62,6 +64,7 @@ namespace _GAME.Scripts.Grid
 
             _gameManager = ServiceLocator.Get<GameManager>();
             _tileManager = ServiceLocator.Get<TileManager>();
+            _cameraController = ServiceLocator.Get<CameraController>();
         }
 
         private void OnDestroy()
@@ -379,7 +382,14 @@ namespace _GAME.Scripts.Grid
                 else
                     newRows = Mathf.Max(2, newRows - 1);
             }
-
+            if (_cameraController != null)
+            {
+                _cameraController.AdjustCameraToFit(newCols, newRows, CELL_SIZE, CAMERA_PADDING);
+            }
+            else
+            {
+                Debug.LogWarning("CameraController not found. Camera will not be adjusted.");
+            }
             this.rows = newRows;
             this.cols = newCols;
 
@@ -576,7 +586,6 @@ namespace _GAME.Scripts.Grid
             var realRow = pos.y - 1;
             var realCol = pos.x - 1;
 
-            // The cell is "empty" if the tile at that position is NOT active.
             return !gridData.cells[realRow, realCol].isActive;
         }
 
