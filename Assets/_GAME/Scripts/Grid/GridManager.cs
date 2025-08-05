@@ -1,5 +1,6 @@
 namespace _GAME.Scripts.Grid
 {
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using _GAME.Scripts.Core;
@@ -17,8 +18,7 @@ namespace _GAME.Scripts.Grid
         [SerializeField] private GameObject tilePrefab;
         [SerializeField] private Transform  gridParent;
 
-        [Header("VFX")]
-        [SerializeField] private GameObject matchVFXPrefab;
+        [Header("VFX")] [SerializeField] private GameObject matchVFXPrefab;
 
         public const float SPAWN_ANIMATION_DURATION = 0.5f;
         public const float SPAWN_STAGGER_PER_TILE   = 0.03f;
@@ -39,7 +39,7 @@ namespace _GAME.Scripts.Grid
         /*
         private       Dictionary<TileType, ObjectPool<TileView>> _tilePools = new Dictionary<TileType, ObjectPool<TileView>>();
         */
-        private ObjectPool<TileView> _tilePool;
+        private ObjectPool<TileView>       _tilePool;
         private ObjectPool<ParticleSystem> _vfxPool;
 
         #endregion
@@ -92,6 +92,12 @@ namespace _GAME.Scripts.Grid
             InitializeGrid();
 
             float totalAnimationTime = GenerateAndPlaceTiles();
+            while(TileManager.Instance.IsDeadlocked())
+            {
+                Debug.LogWarning("Initial board state is deadlocked. Reshuffling data instantly.");
+                // Gọi thẳng hàm trộn dữ liệu, không cần animation
+                ShuffleTileData(GetAllActiveTiles());
+            }
             return totalAnimationTime;
         }
 
@@ -137,11 +143,94 @@ namespace _GAME.Scripts.Grid
             }
         }
 
+        public void CheckDeadlockAndShuffleIfNeeded()
+        {
+            if (TileManager.Instance.IsDeadlocked())
+            {
+                Debug.LogWarning("DEADLOCK DETECTED! No more valid moves. Initiating auto-shuffle.");
+                StartCoroutine(ShuffleAnimationRoutine());
+            }
+        }
+
+        public IEnumerator ShuffleAnimationRoutine()
+        {
+            GameManager.Instance.UpdateGameState(GameState.Shuffling);
+
+            var activeTiles = GetAllActiveTiles();
+            if (activeTiles.Count <= 1)
+            {
+                GameManager.Instance.UpdateGameState(GameState.Playing);
+                yield break;
+            }
+
+            float   animationDuration = 0.5f;
+            Vector3 centerPoint       = gridParent.position;
+
+            Sequence flyInSequence = DOTween.Sequence();
+            foreach (var tile in activeTiles)
+            {
+                tile.IsLocked = true;
+                flyInSequence.Join(tile.transform.DOMove(centerPoint, animationDuration).SetEase(Ease.InBack));
+                flyInSequence.Join(tile.TileVisual.transform.DOScale(0f, animationDuration));
+            }
+            yield return flyInSequence.WaitForCompletion();
+
+            ShuffleTileData(activeTiles);
+
+            Sequence flyOutSequence = DOTween.Sequence();
+            foreach (var tile in activeTiles)
+            {
+                flyOutSequence.Join(tile.transform.DOLocalMove(Vector3.zero, animationDuration).SetEase(Ease.OutBack));
+                flyOutSequence.Join(tile.TileVisual.transform.DOScale(1f, animationDuration));
+            }
+            yield return flyOutSequence.WaitForCompletion();
+
+            foreach (var tile in activeTiles)
+            {
+                tile.IsLocked = false;
+            }
+
+            GameManager.Instance.UpdateGameState(GameState.Playing);
+        }
+
+        private void ShuffleTileData(List<TileView> tilesToShuffle)
+        {
+            List<TileType> currentTypes = tilesToShuffle.Select(t => t.Type).ToList();
+
+            for (int i = 0; i < currentTypes.Count - 1; i++)
+            {
+                int randomIndex = Random.Range(i, currentTypes.Count);
+                (currentTypes[i], currentTypes[randomIndex]) = (currentTypes[randomIndex], currentTypes[i]); // Swap
+            }
+
+            for (int i = 0; i < tilesToShuffle.Count; i++)
+            {
+                TileView tileView = tilesToShuffle[i];
+                TileType newType  = currentTypes[i];
+
+                tileView.Type = newType;
+
+                var tileData = allTileData.Find(t => t.TileType == newType);
+                if (tileData != null)
+                {
+                    var spriteRenderer = tileView.TileVisual.GetComponent<SpriteRenderer>();
+                    if (spriteRenderer != null)
+                    {
+                        spriteRenderer.sprite = tileData.TileImage;
+                    }
+                }
+                tileView.name = $"Tile_{newType}_{tileView.GridPosition.y}_{tileView.GridPosition.x}";
+            }
+
+            Debug.Log($"Shuffled {tilesToShuffle.Count} tiles successfully.");
+        }
+
         public void PlayVFXAt(Vector3 position)
         {
-            if(this._vfxPool == null) return;
+            if (this._vfxPool == null) return;
             var vfxInstance = this._vfxPool.Spawn(position, Quaternion.identity);
         }
+
         public List<Vector2Int> IsMatchValid(TileView tile1, TileView tile2)
         {
             if (tile1.Type != tile2.Type) return null;
@@ -258,7 +347,6 @@ namespace _GAME.Scripts.Grid
                     Debug.LogError("Match VFX Prefab does not have a ParticleSystem component!");
                 }
             }
-
         }
 
         public void ClearOldGrid()

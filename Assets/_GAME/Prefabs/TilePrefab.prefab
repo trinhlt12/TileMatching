@@ -96,6 +96,10 @@ MonoBehaviour:
   TileRenderer: {fileID: 8380432615976479682}
   _animator: {fileID: 0}
   _highlight: {fileID: 7318696032645295758}
+  punchScale: {x: 0.2, y: 0.2, z: 0}
+  punchDuration: 0.4
+  punchVibrato: 5
+  punchElasticity: 0.5
 --- !u!1 &2589090767116776522
 GameObject:
   m_ObjectHideFlags: 0
@@ -202,7 +206,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 1
-  m_Sprite: {fileID: 21300000, guid: 8881fd462b1792849b42382c7f68697f, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9dc4f1c47e63703488d54cf2f984f2fe, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

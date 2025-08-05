@@ -84,6 +84,7 @@ public class GameManager : MonoBehaviour
             case GameState.Paused:         this.HandlePaused(); break;
             case GameState.LevelCompleted: this.HandleLevelCompleted(); break;
             case GameState.GameOver:       this.HandleGameOver(); break;
+            case GameState.Shuffling:      this.HandleShuffling(); break;
         }
     }
 
@@ -126,6 +127,12 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("Game State: Game Over");
         _timerController.StopTimer();
+    }
+
+    private void HandleShuffling()
+    {
+        Debug.Log("Game State: Shuffling... Player input is locked.");
+
     }
 
     #endregion

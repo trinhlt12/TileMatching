@@ -73,6 +73,15 @@ namespace _GAME.Scripts.Tile
 
         #endregion
 
+        #region PUBLIC-METHODS
+
+        public bool IsDeadlocked()
+        {
+            return this.FindValidMove() == null;
+        }
+
+        #endregion
+
         #region PRIVATE-METHODS
 
         private void HandleTileSelection(TileView chosenTile)
@@ -128,7 +137,7 @@ namespace _GAME.Scripts.Tile
         private void ShowHint()
         {
             this.StopHint();
-            var hintPair = FindAHint();
+            var hintPair = this.FindValidMove();
             if (hintPair.HasValue)
             {
                 this._hintedTile1   = hintPair.Value.tile1;
@@ -187,18 +196,17 @@ namespace _GAME.Scripts.Tile
 
         private IEnumerator ProcessMatchAnimation(TileView tile1, TileView tile2, List<Vector2Int> path)
         {
-            /*tile1.SetHighlight(false);
-            tile2.SetHighlight(false);*/
-
             GridManager.Instance.DrawPath(path);
 
             yield return new WaitForSeconds(0.3f);
 
             GridManager.Instance.HidePath();
             GridManager.Instance.ClearMatch(tile1, tile2);
+            yield return null;
+            GridManager.Instance.CheckDeadlockAndShuffleIfNeeded();
         }
 
-        private (TileView tile1, TileView tile2)? FindAHint()
+        private (TileView tile1, TileView tile2)? FindValidMove()
         {
             var activeTiles     = GridManager.Instance.GetAllActiveTiles();
             var searchableTiles = activeTiles.Where(t => !t.IsLocked).ToList();
