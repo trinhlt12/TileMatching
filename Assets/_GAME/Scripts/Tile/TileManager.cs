@@ -3,8 +3,10 @@ namespace _GAME.Scripts.Tile
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using _GAME.Scripts.Core;
     using _GAME.Scripts.Grid;
+    using DG.Tweening;
     using UnityEngine;
 
     public class TileManager : MonoBehaviour
@@ -18,9 +20,18 @@ namespace _GAME.Scripts.Tile
         [SerializeField] private float    _checkDelay;
         private                  TileView _selectedTile1;
         private                  TileView _selectedTile2;
-        /*
-        private                  bool     _isChecking = false;
-        */
+
+        [Header("Hint System Settings")] [SerializeField] private bool  isHintEnabled     = true;
+        [SerializeField]                                  private float hintDelay         = 5f;
+        [SerializeField]                                  private float hintPulseScale    = 1.15f;
+        [SerializeField]                                  private float hintPulseDuration = 0.7f;
+
+        private float     _hintTimer;
+        private Coroutine _hintCoroutine;
+        private TileView  _hintedTile1;
+        private TileView  _hintedTile2;
+
+        #region UNITY-CALLBACKS
 
         private void Awake()
         {
@@ -56,10 +67,18 @@ namespace _GAME.Scripts.Tile
                     }
                 }
             }
+
+            HandleHintTimer();
         }
+
+        #endregion
+
+        #region PRIVATE-METHODS
 
         private void HandleTileSelection(TileView chosenTile)
         {
+            this._hintTimer = 0f; // Reset hint timer when a tile is selected
+            StopHint();
             if (_selectedTile1 == chosenTile)
             {
                 _selectedTile1.SetHighlight(false);
@@ -95,6 +114,63 @@ namespace _GAME.Scripts.Tile
             }
         }
 
+        private void HandleHintTimer()
+        {
+            if (!this.isHintEnabled) return;
+            this._hintTimer += Time.deltaTime;
+            if (this._hintTimer >= this.hintDelay)
+            {
+                ShowHint();
+                this._hintTimer = 0f;
+            }
+        }
+
+        private void ShowHint()
+        {
+            this.StopHint();
+            var hintPair = FindAHint();
+            if (hintPair.HasValue)
+            {
+                this._hintedTile1   = hintPair.Value.tile1;
+                this._hintedTile2   = hintPair.Value.tile2;
+                this._hintCoroutine = StartCoroutine(AnimateHint(this._hintedTile1, this._hintedTile2));
+            }
+        }
+
+        private void StopHint()
+        {
+            if (this._hintCoroutine != null)
+            {
+                StopCoroutine(this._hintCoroutine);
+                _hintCoroutine = null;
+            }
+            if (this._hintedTile1 != null)
+            {
+                this._hintedTile1.TileVisual.transform.DOKill();
+                this._hintedTile1.TileVisual.transform.localScale = Vector3.one;
+                this._hintedTile1                                 = null;
+            }
+            if (this._hintedTile2 != null)
+            {
+                _hintedTile2.TileVisual.transform.DOKill();
+                _hintedTile2.TileVisual.transform.localScale = Vector3.one;
+                _hintedTile2                                 = null;
+            }
+        }
+
+        private IEnumerator AnimateHint(TileView tile1, TileView tile2)
+        {
+            tile1.TileVisual.transform.DOKill();
+            tile2.TileVisual.transform.DOKill();
+            tile1.TileVisual.transform.DOScale(this.hintPulseScale, this.hintPulseDuration)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo);
+            tile2.TileVisual.transform.DOScale(this.hintPulseScale, this.hintPulseDuration)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo);
+            yield return null;
+        }
+
         private IEnumerator ProcessInvalidMatch(TileView tile1, TileView tile2)
         {
             yield return new WaitForSeconds(0.5f);
@@ -122,5 +198,27 @@ namespace _GAME.Scripts.Tile
             GridManager.Instance.ClearMatch(tile1, tile2);
         }
 
+        private (TileView tile1, TileView tile2)? FindAHint()
+        {
+            var activeTiles     = GridManager.Instance.GetAllActiveTiles();
+            var searchableTiles = activeTiles.Where(t => !t.IsLocked).ToList();
+
+            if (searchableTiles.Count < 2) return null;
+            for (var i = 0; i < searchableTiles.Count; i++)
+            {
+                for (var j = i + 1; j < searchableTiles.Count; j++)
+                {
+                    var tile1 = searchableTiles[i];
+                    var tile2 = searchableTiles[j];
+                    if (GridManager.Instance.IsMatchValid(tile1, tile2) != null)
+                    {
+                        return (tile1, tile2);
+                    }
+                }
+            }
+            return null;
+        }
+
+        #endregion
     }
 }
