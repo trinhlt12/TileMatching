@@ -13,6 +13,9 @@ namespace _GAME.Scripts.UI
         [SerializeField]                               private Color lowTimeColor    = new Color(1f, 0.53f, 0.53f); // #FE8888
         [SerializeField]                               private float blinkDuration   = 0.5f;
 
+        [Header("Buttons")]
+        [SerializeField] private Button pauseButton;
+
         private TimeManager _timeManager;
         private Tween           _blinkingTween;
 
@@ -28,6 +31,15 @@ namespace _GAME.Scripts.UI
                 this._timeManager.OnTimeRunningLow += StartBlinkingEffect;
             }
             StopBlinkingEffect();
+
+            pauseButton.onClick.RemoveAllListeners();
+            pauseButton.onClick.AddListener(OnPauseButtonClicked);
+        }
+
+        private void OnPauseButtonClicked()
+        {
+            Debug.Log("Pause button clicked!");
+            _gameManager.PauseGame();
         }
 
         public void UpdateTimerUI(float currentTime, float maxTime)

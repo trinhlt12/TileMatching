@@ -15,6 +15,8 @@ namespace _GAME.Scripts.UI
         [SerializeField]                                private Ease          easeOutType      = Ease.InBack;
         [Header("Base Settings")] [SerializeField]      private bool          isDestroyOnClose = false;
 
+        [Tooltip("Check this if the UI should animate even when Time.timeScale is 0 (e.g., Pause Menu).")]
+        [SerializeField] protected bool ignoreTimeScale = false;
         protected GameManager _gameManager;
         private   Tween       _animationTween;
 
@@ -51,7 +53,7 @@ namespace _GAME.Scripts.UI
                 return;
             }
             gameObject.SetActive(true);
-            AnimateFadeIn();
+            AnimateFadeIn(this.ignoreTimeScale);
         }
 
         public virtual void Close(float time)
@@ -63,7 +65,7 @@ namespace _GAME.Scripts.UI
                 return;
             }
 
-            AnimateFadeOut();
+            AnimateFadeOut(this.ignoreTimeScale);
         }
 
         public virtual void CloseDirectly()
@@ -82,7 +84,7 @@ namespace _GAME.Scripts.UI
 
         #region DEFAULT ANIMATIONS
 
-        private void AnimateFadeIn()
+        private void AnimateFadeIn(bool useUnscaledTime = false)
         {
             _animationTween?.Kill();
 
@@ -97,13 +99,16 @@ namespace _GAME.Scripts.UI
             var canvasGroup                      = container.GetComponent<CanvasGroup>();
             if (canvasGroup == null) canvasGroup = container.gameObject.AddComponent<CanvasGroup>();
             canvasGroup.alpha = 0f;
-            _animationTween = container.DOScale(1f, fadeInDuration)
-                .SetEase(easeInType);
 
-            canvasGroup.DOFade(1f, fadeInDuration * 0.8f); // Fade nhanh hơn một chút cho đẹp
+            _animationTween = container.DOScale(1f, fadeInDuration)
+                .SetEase(easeInType)
+                .SetUpdate(useUnscaledTime);
+
+            canvasGroup.DOFade(1f, fadeInDuration * 0.8f)
+                .SetUpdate(useUnscaledTime);
         }
 
-        private void AnimateFadeOut()
+        private void AnimateFadeOut(bool useUnscaledTime = false)
         {
             _animationTween?.Kill();
 
@@ -118,15 +123,17 @@ namespace _GAME.Scripts.UI
             if (canvasGroup == null) canvasGroup = container.gameObject.AddComponent<CanvasGroup>();
 
             _animationTween = container.DOScale(0.7f, fadeOutDuration)
-                .SetEase(easeOutType);
+                .SetEase(easeOutType)
+                .SetUpdate(useUnscaledTime);
 
             canvasGroup.DOFade(0f, fadeOutDuration)
-                .OnComplete(() =>
-                {
-                    CloseDirectly();
-                });
+                .SetUpdate(useUnscaledTime)
+                .OnComplete(OnFadeOutComplete);
         }
-
+        protected virtual void OnFadeOutComplete()
+        {
+            CloseDirectly();
+        }
         #endregion
     }
 }

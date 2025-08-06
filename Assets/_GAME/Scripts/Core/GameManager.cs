@@ -21,6 +21,7 @@ public class GameManager : MonoBehaviour
     private LevelManager _levelManager;
 
     private UIManager    _uiManager;
+    private GameState    _previousState;
     private ScoreManager _scoreManager;
 
     public GameState CurrentState
@@ -58,6 +59,22 @@ public class GameManager : MonoBehaviour
         _uiManager    = ServiceLocator.Get<UIManager>();
         _scoreManager = ServiceLocator.Get<ScoreManager>();
         UpdateGameState(GameState.MainMenu);
+    }
+
+    public void PauseGame()
+    {
+        if (CurrentState == GameState.Playing)
+        {
+            UpdateGameState(GameState.Paused);
+        }
+    }
+
+    public void ResumeGame()
+    {
+        if (CurrentState == GameState.Paused)
+        {
+            UpdateGameState(GameState.Playing);
+        }
     }
 
     public void StartLevel(int levelNumber)
@@ -104,18 +121,13 @@ public class GameManager : MonoBehaviour
 
     private void HandlePlaying()
     {
-        this._uiManager.Open<GamePlayCanvas>();
-
-        this._scoreManager.ResetScore();
-        var timeLimit = this._levelManager.CurrentLevelData.timeLimit;
-        this.timeManager.StartTimer(timeLimit);
         Time.timeScale = 1f;
     }
 
     private void HandlePaused()
     {
-        Debug.Log("Game State: Paused");
         Time.timeScale = 0f;
+        _uiManager.Open<PauseCanvas>();
     }
 
     private void HandleLevelCompleted()
@@ -135,6 +147,16 @@ public class GameManager : MonoBehaviour
     private void HandleShuffling()
     {
         Debug.Log("Game State: Shuffling... Player input is locked.");
+    }
+
+    private void SetupNewLevel()
+    {
+        _uiManager.CloseAll();
+        _uiManager.Open<GamePlayCanvas>();
+
+        _scoreManager.ResetScore();
+        var timeLimit = _levelManager.CurrentLevelData.timeLimit;
+        timeManager.StartTimer(timeLimit);
     }
 
     #endregion

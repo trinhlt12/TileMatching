@@ -26,16 +26,16 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2083289589438545350}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: 0.18354975, w: 0.9830104}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8749782207732472155}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 21.153}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -383}
+  m_AnchoredPosition: {x: -279, y: -407}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5140137898061503438
@@ -481,10 +481,12 @@ MonoBehaviour:
   easeInType: 27
   easeOutType: 26
   isDestroyOnClose: 0
+  ignoreTimeScale: 0
   timeBarFillImage: {fileID: 151182213458986537}
   normalTimeColor: {r: 1, g: 1, b: 1, a: 1}
   lowTimeColor: {r: 1, g: 0.53, b: 0.53, a: 1}
   blinkDuration: 0.5
+  pauseButton: {fileID: 5034255589653675175}
 --- !u!1 &6829860542529530640
 GameObject:
   m_ObjectHideFlags: 0

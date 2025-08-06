@@ -4,20 +4,26 @@ namespace _GAME.Scripts.Level
     using System.Collections;
     using _GAME.Scripts.Core;
     using _GAME.Scripts.Grid;
+    using _GAME.Scripts.Score;
     using _GAME.Scripts.Services;
+    using _GAME.Scripts.UI;
     using UnityEngine;
 
     public class LevelManager : MonoBehaviour
     {
         #region FIELDS
+
         public LevelData CurrentLevelData { get; private set; }
 
         public int CurrentLevelIndex { get; private set; }
 
         [Header("Level Configuration")] [SerializeField] private int _maxLevelCount;
 
-        private GameManager _gameManager;
-        private GridManager _gridManager;
+        private GameManager  _gameManager;
+        private GridManager  _gridManager;
+        private UIManager    _uiManager;
+        private ScoreManager _scoreManager;
+        private TimeManager  _timeManager;
 
         #endregion
 
@@ -26,12 +32,15 @@ namespace _GAME.Scripts.Level
         private void Awake()
         {
             ServiceLocator.Register(this);
-
         }
 
         private void Start()
         {
-            _gameManager      = ServiceLocator.Get<GameManager>();
+            _gameManager  = ServiceLocator.Get<GameManager>();
+            _uiManager    = ServiceLocator.Get<UIManager>();
+            _scoreManager = ServiceLocator.Get<ScoreManager>();
+            _timeManager  = ServiceLocator.Get<GameManager>().GetComponent<TimeManager>();
+
             this._gridManager = ServiceLocator.Get<GridManager>();
         }
 
@@ -88,7 +97,7 @@ namespace _GAME.Scripts.Level
         private IEnumerator LoadLevelCoroutine(int levelNumber)
         {
             OnDespawn();
-            var path = $"Levels/level_{levelNumber}";
+            var             path    = $"Levels/level_{levelNumber}";
             ResourceRequest request = Resources.LoadAsync<TextAsset>(path);
 
             while (!request.isDone)
@@ -101,13 +110,14 @@ namespace _GAME.Scripts.Level
             if (request.asset == null)
             {
                 Debug.LogError($"Failed to load level data from path: {path}");
+                ServiceLocator.Get<GameManager>().UpdateGameState(GameState.MainMenu);
                 this._gameManager.UpdateGameState(GameState.MainMenu);
+
                 yield break;
             }
             TextAsset jsonFile = request.asset as TextAsset;
             CurrentLevelData  = JsonUtility.FromJson<LevelData>(jsonFile.text);
             CurrentLevelIndex = levelNumber;
-
 
             float setupAnimationTime = this._gridManager.SetupGridFromData(CurrentLevelData);
 
@@ -116,16 +126,21 @@ namespace _GAME.Scripts.Level
                 yield return new WaitForSeconds(setupAnimationTime);
             }
 
+            _uiManager.CloseAll();
+            _uiManager.Open<GamePlayCanvas>();
+
+            _scoreManager.ResetScore();
+            _timeManager.StartTimer(CurrentLevelData.timeLimit);
+
             if (CurrentLevelData == null)
             {
                 Debug.LogError($"Failed to parse level data for level {levelNumber}.");
                 this._gameManager.UpdateGameState(GameState.MainMenu);
                 yield break;
             }
-            this._gameManager.UpdateGameState(GameState.Playing);
+            ServiceLocator.Get<GameManager>().UpdateGameState(GameState.Playing);
         }
 
         #endregion
-
     }
 }
