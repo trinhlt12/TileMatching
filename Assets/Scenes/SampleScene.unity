@@ -213,7 +213,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5692aa6c2f7b4adea57c1d365d93054d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isEnabled: 1
+  isEnabled: 0
   moveDelay: 1
 --- !u!4 &155283028
 Transform:
