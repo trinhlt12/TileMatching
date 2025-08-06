@@ -1,5 +1,6 @@
 namespace _GAME.Scripts.Core
 {
+    using System.Collections;
     using _GAME.Scripts.Services;
     using DG.Tweening;
     using UnityEngine;
@@ -9,8 +10,9 @@ namespace _GAME.Scripts.Core
     {
         [SerializeField] private float duration = 0.75f;
 
-        private Camera _camera;
-        private Tween  _cameraTween;
+        private Camera    _camera;
+        private Tween     _cameraTween;
+        private Coroutine _adjustCoroutine;
 
         private void Awake()
         {
@@ -20,21 +22,24 @@ namespace _GAME.Scripts.Core
 
         public void AdjustCameraToFit(int gridWidth, int gridHeight, float cellSize, float padding)
         {
-            float totalGridWidth  = gridWidth * cellSize;
-            float totalGridHeight = gridHeight * cellSize;
+            if (_adjustCoroutine != null)
+            {
+                StopCoroutine(_adjustCoroutine);
+            }
+            _adjustCoroutine = StartCoroutine(AdjustCameraCoroutine(gridWidth, gridHeight, cellSize, padding));
+        }
+        private IEnumerator AdjustCameraCoroutine(int gridWidth, int gridHeight, float cellSize, float padding)
+        {
+            yield return new WaitForEndOfFrame();
 
-            float paddedWidth  = totalGridWidth + padding;
-            float paddedHeight = totalGridHeight + padding;
+            float targetWorldWidth = (gridWidth * cellSize) + padding;
+            float targetOrthoSize  = (targetWorldWidth / _camera.aspect) / 2f;
 
-            float sizeForWidth = (paddedWidth / _camera.aspect) / 2f;
-
-            float sizeForHeight = paddedHeight / 2f;
-
-            float targetSize = Mathf.Max(sizeForWidth, sizeForHeight);
             _cameraTween?.Kill();
-
-            _cameraTween = _camera.DOOrthoSize(targetSize, duration)
+            _cameraTween = _camera.DOOrthoSize(targetOrthoSize, duration)
                 .SetEase(Ease.OutCubic);
+
+            Debug.Log($"Camera adjustment completed. Final aspect: {_camera.aspect}, Target size: {targetOrthoSize}");
         }
     }
 }
