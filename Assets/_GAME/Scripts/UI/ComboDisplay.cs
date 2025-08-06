@@ -29,6 +29,9 @@ namespace _GAME.Scripts.UI
             _scoreManager                =  ServiceLocator.Get<ScoreManager>();
             _scoreManager.OnComboChanged += HandleComboChanged;
             _scoreManager.OnComboBreak   += HandleComboBreak;
+
+            // Subscribe to game state changes
+            GameManager.OnGameStateChanged += HandleGameStateChanged;
         }
 
         private void OnDisable()
@@ -38,13 +41,32 @@ namespace _GAME.Scripts.UI
                 _scoreManager.OnComboChanged -= HandleComboChanged;
                 _scoreManager.OnComboBreak   -= HandleComboBreak;
             }
+
+            // Unsubscribe from game state changes
+            GameManager.OnGameStateChanged -= HandleGameStateChanged;
+
             _animationSequence?.Kill();
+        }
+
+        private void HandleGameStateChanged(GameState newState)
+        {
+            if (newState == GameState.LevelSetup)
+            {
+                ResetDisplay();
+            }
+        }
+
+        private void ResetDisplay()
+        {
+            _animationSequence?.Kill();
+
+            _comboText.alpha = 0f;
+            transform.localScale = Vector3.one;
         }
 
         private void HandleComboChanged(int comboCount)
         {
             _comboText.text = $"COMBO x{comboCount}";
-
             AnimateComboPopup();
         }
 
@@ -62,8 +84,8 @@ namespace _GAME.Scripts.UI
 
             _animationSequence = DOTween.Sequence();
 
-            _animationSequence.Append(_comboText.DOFade(1f, fadeInDuration));                     // Mờ dần hiện ra
-            _animationSequence.Join(transform.DOScale(1f, fadeInDuration).SetEase(Ease.OutBack)); // Phóng to ra
+            _animationSequence.Append(_comboText.DOFade(1f, fadeInDuration));
+            _animationSequence.Join(transform.DOScale(1f, fadeInDuration).SetEase(Ease.OutBack));
 
             _animationSequence.Append(transform.DOPunchScale(Vector3.one * (punchScale - 1), 0.3f, 8, 1));
         }

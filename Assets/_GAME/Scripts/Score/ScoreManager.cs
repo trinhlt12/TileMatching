@@ -55,6 +55,17 @@ namespace _GAME.Scripts.Score
 
             _comboResetCoroutine = StartCoroutine(ResetComboAfterDelay());
         }
+
+        public void ResetCombo()
+        {
+            if (_comboResetCoroutine != null)
+            {
+                StopCoroutine(_comboResetCoroutine);
+            }
+
+            CurrentCombo = 0;
+            OnComboBreak?.Invoke();
+        }
         private IEnumerator ResetComboAfterDelay()
         {
             yield return new WaitForSeconds(ComboResetTime);

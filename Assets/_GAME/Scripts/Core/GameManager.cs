@@ -116,7 +116,7 @@ public class GameManager : MonoBehaviour
 
     private void HandleLevelSetup()
     {
-        this._uiManager.CloseDirectly<MainMenuCanvas>();
+        this._uiManager.CloseAll();
     }
 
     private void HandlePlaying()
@@ -147,6 +147,19 @@ public class GameManager : MonoBehaviour
     private void HandleShuffling()
     {
         Debug.Log("Game State: Shuffling... Player input is locked.");
+    }
+
+    public void RestartLevel()
+    {
+        Time.timeScale = 1f;
+        UpdateGameState(GameState.LevelSetup);
+        _levelManager.RestartLevel();
+    }
+
+    public void QuitToMainMenu()
+    {
+        Time.timeScale = 1f;
+        UpdateGameState(GameState.MainMenu);
     }
 
     private void SetupNewLevel()

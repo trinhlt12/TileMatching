@@ -347,6 +347,27 @@ namespace _GAME.Scripts.Grid
 
         public void ClearOldGrid()
         {
+            if (gridData != null)
+            {
+                for (int r = 0; r < gridData.rows; r++)
+                {
+                    for (int c = 0; c < gridData.cols; c++)
+                    {
+                        var cell = gridData.cells[r, c];
+                        if (cell.isActive && cell.tileViewReference != null)
+                        {
+                            cell.tileViewReference.gameObject.SetActive(false);
+                            _tilePool.ReturnToPool(cell.tileViewReference);
+                            cell.tileViewReference = null;
+                            cell.isActive          = false;
+                        }
+                    }
+                }
+            }
+
+            _activeTiles.Clear();
+
+            // Destroy cell objects
             if (cellObjects != null)
             {
                 for (int r = 0; r < cellObjects.GetLength(0); r++)
@@ -360,7 +381,7 @@ namespace _GAME.Scripts.Grid
                     }
                 }
             }
-            _activeTiles.Clear();
+
             gridData         = null;
             cellObjects      = null;
             currentLevelData = null;

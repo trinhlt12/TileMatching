@@ -13,17 +13,15 @@ namespace _GAME.Scripts.UI
         [SerializeField]                               private Color lowTimeColor    = new Color(1f, 0.53f, 0.53f); // #FE8888
         [SerializeField]                               private float blinkDuration   = 0.5f;
 
-        [Header("Buttons")]
-        [SerializeField] private Button pauseButton;
+        [Header("Buttons")] [SerializeField] private Button pauseButton;
 
         private TimeManager _timeManager;
-        private Tween           _blinkingTween;
+        private Tween       _blinkingTween;
 
         public override void SetUp()
         {
             base.SetUp();
             _timeManager = ServiceLocator.Get<TimeManager>();
-
 
             if (this._timeManager != null)
             {

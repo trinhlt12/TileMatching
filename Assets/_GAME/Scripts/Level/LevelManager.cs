@@ -60,7 +60,7 @@ namespace _GAME.Scripts.Level
                 return;
             }
 
-            StartCoroutine(LoadLevelCoroutine(levelNumber));
+            StartCoroutine(LoadLevelCoroutine(levelNumber, false));
         }
 
         public void LoadNextLevel()
@@ -82,7 +82,11 @@ namespace _GAME.Scripts.Level
         {
             if (CurrentLevelIndex > 0)
             {
-                LoadLevel(CurrentLevelIndex);
+                StartCoroutine(LoadLevelCoroutine(CurrentLevelIndex, true));
+            }
+            else
+            {
+                StartCoroutine(LoadLevelCoroutine(1, false));
             }
         }
 
@@ -94,7 +98,7 @@ namespace _GAME.Scripts.Level
 
         #region PRIVATE METHODS
 
-        private IEnumerator LoadLevelCoroutine(int levelNumber)
+        private IEnumerator LoadLevelCoroutine(int levelNumber, bool isRestart = false)
         {
             OnDespawn();
             var             path    = $"Levels/level_{levelNumber}";
@@ -110,14 +114,20 @@ namespace _GAME.Scripts.Level
             if (request.asset == null)
             {
                 Debug.LogError($"Failed to load level data from path: {path}");
-                ServiceLocator.Get<GameManager>().UpdateGameState(GameState.MainMenu);
                 this._gameManager.UpdateGameState(GameState.MainMenu);
-
                 yield break;
             }
+
             TextAsset jsonFile = request.asset as TextAsset;
             CurrentLevelData  = JsonUtility.FromJson<LevelData>(jsonFile.text);
             CurrentLevelIndex = levelNumber;
+
+            if (CurrentLevelData == null)
+            {
+                Debug.LogError($"Failed to parse level data for level {levelNumber}.");
+                this._gameManager.UpdateGameState(GameState.MainMenu);
+                yield break;
+            }
 
             float setupAnimationTime = this._gridManager.SetupGridFromData(CurrentLevelData);
 
@@ -126,19 +136,14 @@ namespace _GAME.Scripts.Level
                 yield return new WaitForSeconds(setupAnimationTime);
             }
 
-            _uiManager.CloseAll();
+            _uiManager.CloseDirectly<MainMenuCanvas>();
             _uiManager.Open<GamePlayCanvas>();
 
             _scoreManager.ResetScore();
+            this._scoreManager.ResetCombo();
             _timeManager.StartTimer(CurrentLevelData.timeLimit);
 
-            if (CurrentLevelData == null)
-            {
-                Debug.LogError($"Failed to parse level data for level {levelNumber}.");
-                this._gameManager.UpdateGameState(GameState.MainMenu);
-                yield break;
-            }
-            ServiceLocator.Get<GameManager>().UpdateGameState(GameState.Playing);
+            this._gameManager.UpdateGameState(GameState.Playing);
         }
 
         #endregion
