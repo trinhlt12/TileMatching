@@ -73,6 +73,8 @@ public class GameManager : MonoBehaviour
     {
         if (CurrentState == GameState.Paused)
         {
+            _uiManager.CloseUI<PauseCanvas>(1f);
+
             UpdateGameState(GameState.Playing);
         }
     }

@@ -36,13 +36,4 @@ public class PauseCanvas : UICanvas
     {
         _gameManager.QuitToMainMenu();
     }
-
-    public override void CloseDirectly()
-    {
-        base.CloseDirectly();
-        if (_gameManager != null && _gameManager.CurrentState == GameState.Paused)
-        {
-            _gameManager.ResumeGame();
-        }
-    }
 }

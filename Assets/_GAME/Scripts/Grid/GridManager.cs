@@ -220,7 +220,7 @@ namespace _GAME.Scripts.Grid
                 var tileData = allTileData.Find(t => t.TileType == newType);
                 if (tileData != null)
                 {
-                    var spriteRenderer = tileView.TileVisual.GetComponent<SpriteRenderer>();
+                    var spriteRenderer = tileView.TileRenderer.GetComponent<SpriteRenderer>();
                     if (spriteRenderer != null)
                     {
                         spriteRenderer.sprite = tileData.TileImage;

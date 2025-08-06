@@ -52,7 +52,12 @@ namespace _GAME.Scripts.Tile
         {
             //Guard clause
             if (this._gameManager.CurrentState != GameState.Playing) return;
-
+            // --- TESTING SHUFFLE ---
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                Debug.Log("Space key pressed! Forcing a shuffle for testing.");
+                _gridManager.StartCoroutine(_gridManager.ShuffleAnimationRoutine());
+            }
             if (Input.GetMouseButtonDown(0))
             {
                 var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
