@@ -152,7 +152,7 @@ namespace _GAME.Scripts.Grid
 
         public void CheckDeadlockAndShuffleIfNeeded()
         {
-            if (this._tileManager.IsDeadlocked())
+            if (this._tileManager.IsDeadlocked() && this._activeTiles.Count > 0)
             {
                 Debug.LogWarning("DEADLOCK DETECTED! No more valid moves. Initiating auto-shuffle.");
                 StartCoroutine(ShuffleAnimationRoutine());
