@@ -118,7 +118,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 71c1514a6bd24e1e882cebbe1904ce04, type: 3}
-  m_Name: SuperBakery-3lXyp SDF
+  m_Name: SuperBakery-3lXyp SDF 1
   m_EditorClassIdentifier: 
   hashCode: 10732373
   material: {fileID: -6866154860664398756}
