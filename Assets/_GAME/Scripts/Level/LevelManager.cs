@@ -6,6 +6,7 @@ namespace _GAME.Scripts.Level
     using _GAME.Scripts.Grid;
     using _GAME.Scripts.Score;
     using _GAME.Scripts.Services;
+    using _GAME.Scripts.Tile;
     using _GAME.Scripts.UI;
     using UnityEngine;
 
@@ -24,6 +25,7 @@ namespace _GAME.Scripts.Level
         private UIManager    _uiManager;
         private ScoreManager _scoreManager;
         private TimeManager  _timeManager;
+        private TileManager  _tileManager;
 
         #endregion
 
@@ -39,6 +41,7 @@ namespace _GAME.Scripts.Level
             _gameManager  = ServiceLocator.Get<GameManager>();
             _uiManager    = ServiceLocator.Get<UIManager>();
             _scoreManager = ServiceLocator.Get<ScoreManager>();
+            _tileManager  = ServiceLocator.Get<TileManager>();
             _timeManager  = ServiceLocator.Get<GameManager>().GetComponent<TimeManager>();
 
             this._gridManager = ServiceLocator.Get<GridManager>();
@@ -142,6 +145,7 @@ namespace _GAME.Scripts.Level
             _scoreManager.ResetScore();
             this._scoreManager.ResetCombo();
             _timeManager.StartTimer(CurrentLevelData.timeLimit);
+            this._tileManager.ResetHintSystem();
 
             this._gameManager.UpdateGameState(GameState.Playing);
         }

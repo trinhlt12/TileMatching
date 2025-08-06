@@ -20,6 +20,9 @@ public class PauseCanvas : UICanvas
 
         restartButton.onClick.RemoveAllListeners();
         restartButton.onClick.AddListener(OnRestartButtonClicked);
+
+        mainMenuButton.onClick.RemoveAllListeners();
+        mainMenuButton.onClick.AddListener(OnMainMenuButtonClicked);
     }
 
     private void OnResumeButtonClicked()

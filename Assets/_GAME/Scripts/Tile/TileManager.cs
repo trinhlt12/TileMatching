@@ -87,6 +87,12 @@ namespace _GAME.Scripts.Tile
             return this.FindValidMove() == null;
         }
 
+        public void ResetHintSystem()
+        {
+            _hintTimer = 0f;
+            StopHint();
+        }
+
         #endregion
 
         #region PRIVATE-METHODS
