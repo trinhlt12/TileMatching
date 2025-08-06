@@ -15,9 +15,10 @@ namespace _GAME.Scripts.Tile
         public List<TileDB>                  tileDataList;
         public static event Action<TileView> OnTileClicked;
 
-        [SerializeField] private float    _checkDelay;
-        private                  TileView _selectedTile1;
-        private                  TileView _selectedTile2;
+        [SerializeField] private LineDrawer _lineDrawer;
+        [SerializeField] private float      _checkDelay;
+        private                  TileView   _selectedTile1;
+        private                  TileView   _selectedTile2;
 
         [Header("Hint System Settings")] [SerializeField] private bool  isHintEnabled     = true;
         [SerializeField]                                  private float hintDelay         = 5f;
@@ -197,11 +198,17 @@ namespace _GAME.Scripts.Tile
 
         private IEnumerator ProcessMatchAnimation(TileView tile1, TileView tile2, List<Vector2Int> path)
         {
-            this._gridManager.DrawPath(path);
+            if (_lineDrawer != null)
+            {
+                float     drawDuration = 0.25f;
+                Vector3[] worldPoints  = path.Select(p => _gridManager.GetWorldPositionForPaddedGrid(p)).ToArray();
+
+                _lineDrawer.AnimateDraw(worldPoints, drawDuration);
+            }
 
             yield return new WaitForSeconds(0.3f);
 
-            this._gridManager.HidePath();
+            if(this._lineDrawer != null) this._lineDrawer.Hide();
             this._gridManager.ClearMatch(tile1, tile2);
             yield return null;
             this._gridManager.CheckDeadlockAndShuffleIfNeeded();
