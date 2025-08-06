@@ -20,7 +20,7 @@ namespace _GAME.Scripts.UI
         protected GameManager _gameManager;
         private   Tween       _animationTween;
 
-        private void Awake()
+        protected virtual void Awake()
         {
             RectTransform rectTransform = GetComponent<RectTransform>();
             float         ratio         = (float)Screen.width / Screen.height;

@@ -407,6 +407,7 @@ GameObject:
   - component: {fileID: 2811588431055961229}
   - component: {fileID: 3293342537551866388}
   - component: {fileID: 5464508017059290293}
+  - component: {fileID: 5380883985652518649}
   m_Layer: 5
   m_Name: Canvas - Win
   m_TagString: Untagged
@@ -451,7 +452,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_VertexColorAlwaysGammaSpace: 0
+  m_VertexColorAlwaysGammaSpace: 1
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -497,6 +498,34 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &5380883985652518649
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2676333998552547405}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07fa842eabd3456a90255532ebda37e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  useCustomAnimation: 1
+  container: {fileID: 5622491222092715771}
+  fadeInDuration: 0.5
+  fadeOutDuration: 0.3
+  easeInType: 27
+  easeOutType: 26
+  isDestroyOnClose: 0
+  ignoreTimeScale: 1
+  restartButton: {fileID: 7915469702227176192}
+  nextLevelButton: {fileID: 4612788522077434955}
+  mainMenuButton: {fileID: 8222963322869821022}
+  glowImage: {fileID: 539044635873907107}
+  bunnyImage: {fileID: 4239610735205726387}
+  bunnyDropDuration: 0.8
+  glowRotateSpeed: 20
+  glowPulseSpeed: 1.5
 --- !u!1 &3835601750225628399
 GameObject:
   m_ObjectHideFlags: 0
@@ -801,7 +830,7 @@ GameObject:
   - component: {fileID: 5489618408995795661}
   - component: {fileID: 2162736926836960661}
   m_Layer: 5
-  m_Name: Image
+  m_Name: Image - Bunny
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

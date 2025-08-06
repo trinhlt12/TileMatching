@@ -85,6 +85,12 @@ public class GameManager : MonoBehaviour
         this._levelManager.LoadLevel(levelNumber);
     }
 
+    public void LoadNextLevel()
+    {
+        UpdateGameState(GameState.LevelSetup);
+        _levelManager.LoadNextLevel();
+    }
+
     private void HandleTimeUp()
     {
         Debug.Log("GAME MANAGER: Time's up! Game Over.");
@@ -137,6 +143,7 @@ public class GameManager : MonoBehaviour
         Debug.Log("Game State: Level Complete");
         this.timeManager.StopTimer();
         this._scoreManager.SubmitAndTrySetNewHighScore();
+        _uiManager.Open<WinCanvas>();
     }
 
     private void HandleGameOver()

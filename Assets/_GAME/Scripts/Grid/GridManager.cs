@@ -148,6 +148,11 @@ namespace _GAME.Scripts.Grid
                 Destroy(tile1.gameObject);
                 Destroy(tile2.gameObject);
             }
+            if (_activeTiles.Count == 0)
+            {
+                Debug.Log("GridManager: All tiles cleared! Level Complete!");
+                _gameManager.UpdateGameState(GameState.LevelCompleted);
+            }
         }
 
         public void CheckDeadlockAndShuffleIfNeeded()
