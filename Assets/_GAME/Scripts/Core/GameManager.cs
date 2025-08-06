@@ -4,6 +4,7 @@ using System;
 using _GAME.Scripts.Core;
 using _GAME.Scripts.Grid;
 using _GAME.Scripts.Level;
+using _GAME.Scripts.Score;
 using _GAME.Scripts.Services;
 using _GAME.Scripts.UI;
 using UnityEngine;
@@ -19,7 +20,8 @@ public class GameManager : MonoBehaviour
 
     private LevelManager _levelManager;
 
-    private UIManager _uiManager;
+    private UIManager    _uiManager;
+    private ScoreManager _scoreManager;
 
     public GameState CurrentState
     {
@@ -54,6 +56,7 @@ public class GameManager : MonoBehaviour
     {
         _levelManager = ServiceLocator.Get<LevelManager>();
         _uiManager    = ServiceLocator.Get<UIManager>();
+        _scoreManager = ServiceLocator.Get<ScoreManager>();
         UpdateGameState(GameState.MainMenu);
     }
 
@@ -103,6 +106,7 @@ public class GameManager : MonoBehaviour
     {
         this._uiManager.Open<GamePlayCanvas>();
 
+        this._scoreManager.ResetScore();
         var timeLimit = this._levelManager.CurrentLevelData.timeLimit;
         this.timeManager.StartTimer(timeLimit);
         Time.timeScale = 1f;
@@ -118,12 +122,14 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("Game State: Level Complete");
         this.timeManager.StopTimer();
+        this._scoreManager.SubmitAndTrySetNewHighScore();
     }
 
     private void HandleGameOver()
     {
         Debug.Log("Game State: Game Over");
         this.timeManager.StopTimer();
+        _scoreManager.SubmitAndTrySetNewHighScore();
     }
 
     private void HandleShuffling()

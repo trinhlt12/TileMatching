@@ -6,6 +6,7 @@ namespace _GAME.Scripts.Grid
     using _GAME.Scripts.Core;
     using _GAME.Scripts.Extensions;
     using _GAME.Scripts.Level;
+    using _GAME.Scripts.Score;
     using _GAME.Scripts.Services;
     using _GAME.Scripts.Tile;
     using DG.Tweening;
@@ -43,6 +44,7 @@ namespace _GAME.Scripts.Grid
 
         private GameManager _gameManager;
         private TileManager _tileManager;
+        private ScoreManager _scoreManager;
         private Pathfinder  _pathfinder;
         private CameraController _cameraController;
 
@@ -64,6 +66,7 @@ namespace _GAME.Scripts.Grid
 
             _gameManager = ServiceLocator.Get<GameManager>();
             _tileManager = ServiceLocator.Get<TileManager>();
+            _scoreManager = ServiceLocator.Get<ScoreManager>();
             _cameraController = ServiceLocator.Get<CameraController>();
         }
 
@@ -104,6 +107,7 @@ namespace _GAME.Scripts.Grid
 
         public void ClearMatch(TileView tile1, TileView tile2)
         {
+            this._scoreManager.AddScore(this._scoreManager.DefaultScoreValue);
             PlayVFXAt(tile1.transform.position);
             PlayVFXAt(tile2.transform.position);
 
