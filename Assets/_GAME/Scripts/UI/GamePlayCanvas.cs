@@ -1,6 +1,7 @@
 namespace _GAME.Scripts.UI
 {
     using _GAME.Scripts.Core;
+    using _GAME.Scripts.Services;
     using DG.Tweening;
     using UnityEngine;
     using UnityEngine.UI;
@@ -12,20 +13,31 @@ namespace _GAME.Scripts.UI
         [SerializeField]                               private Color lowTimeColor    = new Color(1f, 0.53f, 0.53f); // #FE8888
         [SerializeField]                               private float blinkDuration   = 0.5f;
 
-        private TimerController _timerController;
-        private Tween           _blinkingTween;
+        [Header("Buttons")] [SerializeField] private Button pauseButton;
+
+        private TimeManager _timeManager;
+        private Tween       _blinkingTween;
 
         public override void SetUp()
         {
             base.SetUp();
-            _timerController = GameManager.Instance.GetComponent<TimerController>();
+            _timeManager = ServiceLocator.Get<TimeManager>();
 
-            if (_timerController != null)
+            if (this._timeManager != null)
             {
-                _timerController.OnTimeUpdated    += UpdateTimerUI;
-                _timerController.OnTimeRunningLow += StartBlinkingEffect;
+                this._timeManager.OnTimeUpdated    += UpdateTimerUI;
+                this._timeManager.OnTimeRunningLow += StartBlinkingEffect;
             }
             StopBlinkingEffect();
+
+            pauseButton.onClick.RemoveAllListeners();
+            pauseButton.onClick.AddListener(OnPauseButtonClicked);
+        }
+
+        private void OnPauseButtonClicked()
+        {
+            Debug.Log("Pause button clicked!");
+            _gameManager.PauseGame();
         }
 
         public void UpdateTimerUI(float currentTime, float maxTime)
@@ -38,9 +50,9 @@ namespace _GAME.Scripts.UI
 
         public override void CloseDirectly()
         {
-            if (_timerController != null)
+            if (this._timeManager != null)
             {
-                _timerController.OnTimeUpdated -= UpdateTimerUI;
+                this._timeManager.OnTimeUpdated -= UpdateTimerUI;
             }
             StopBlinkingEffect();
             base.CloseDirectly();
@@ -48,9 +60,9 @@ namespace _GAME.Scripts.UI
 
         public override void Close(float time)
         {
-            if (_timerController != null)
+            if (this._timeManager != null)
             {
-                _timerController.OnTimeUpdated -= UpdateTimerUI;
+                this._timeManager.OnTimeUpdated -= UpdateTimerUI;
             }
             StopBlinkingEffect();
             base.Close(time);

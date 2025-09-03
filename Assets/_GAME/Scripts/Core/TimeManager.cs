@@ -1,10 +1,11 @@
 namespace _GAME.Scripts.Core
 {
-    // File: TimerController.cs
+    // File: TimeManager.cs
     using System;
+    using _GAME.Scripts.Services;
     using UnityEngine;
 
-    public class TimerController : MonoBehaviour
+    public class TimeManager : MonoBehaviour
     {
         public event Action<float, float> OnTimeUpdated;
 
@@ -17,6 +18,11 @@ namespace _GAME.Scripts.Core
         private float _maxTime;
         private float _remainingTime;
         private bool  _isRunning = false;
+
+        private void Awake()
+        {
+            ServiceLocator.Register(this);
+        }
 
         private void Update()
         {

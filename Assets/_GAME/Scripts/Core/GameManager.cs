@@ -4,19 +4,25 @@ using System;
 using _GAME.Scripts.Core;
 using _GAME.Scripts.Grid;
 using _GAME.Scripts.Level;
+using _GAME.Scripts.Score;
+using _GAME.Scripts.Services;
 using _GAME.Scripts.UI;
 using UnityEngine;
 
-[RequireComponent(typeof(TimerController))]
+[RequireComponent(typeof(TimeManager))]
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance { get; private set; }
-
     public static event Action<GameState> OnGameStateChanged;
 
     private GameState _currentState;
 
-    private TimerController _timerController;
+    private TimeManager timeManager;
+
+    private LevelManager _levelManager;
+
+    private UIManager    _uiManager;
+    private GameState    _previousState;
+    private ScoreManager _scoreManager;
 
     public GameState CurrentState
     {
@@ -33,37 +39,56 @@ public class GameManager : MonoBehaviour
 
     private void OnEnable()
     {
-        _timerController.OnTimeUp += HandleTimeUp;
+        this.timeManager.OnTimeUp += HandleTimeUp;
     }
 
     private void OnDisable()
     {
-        _timerController.OnTimeUp -= HandleTimeUp;
+        this.timeManager.OnTimeUp -= HandleTimeUp;
     }
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-        _timerController = GetComponent<TimerController>();
+        ServiceLocator.Register(this);
+        this.timeManager = GetComponent<TimeManager>();
     }
 
     private void Start()
     {
+        _levelManager = ServiceLocator.Get<LevelManager>();
+        _uiManager    = ServiceLocator.Get<UIManager>();
+        _scoreManager = ServiceLocator.Get<ScoreManager>();
         UpdateGameState(GameState.MainMenu);
+    }
+
+    public void PauseGame()
+    {
+        if (CurrentState == GameState.Playing)
+        {
+            UpdateGameState(GameState.Paused);
+        }
+    }
+
+    public void ResumeGame()
+    {
+        if (CurrentState == GameState.Paused)
+        {
+            _uiManager.CloseUI<PauseCanvas>(1f);
+
+            UpdateGameState(GameState.Playing);
+        }
     }
 
     public void StartLevel(int levelNumber)
     {
         UpdateGameState(GameState.LevelSetup);
-        LevelManager.Instance.LoadLevel(levelNumber);
+        this._levelManager.LoadLevel(levelNumber);
+    }
+
+    public void LoadNextLevel()
+    {
+        UpdateGameState(GameState.LevelSetup);
+        _levelManager.LoadNextLevel();
     }
 
     private void HandleTimeUp()
@@ -84,6 +109,7 @@ public class GameManager : MonoBehaviour
             case GameState.Paused:         this.HandlePaused(); break;
             case GameState.LevelCompleted: this.HandleLevelCompleted(); break;
             case GameState.GameOver:       this.HandleGameOver(); break;
+            case GameState.Shuffling:      this.HandleShuffling(); break;
         }
     }
 
@@ -92,40 +118,67 @@ public class GameManager : MonoBehaviour
     private void HandleMainMenu()
     {
         Debug.Log("Game State: Main Menu");
-        UIManager.Instance.CloseAll();
-        UIManager.Instance.Open<MainMenuCanvas>();
+        this._uiManager.CloseAll();
+        this._uiManager.Open<MainMenuCanvas>();
     }
 
     private void HandleLevelSetup()
     {
-        UIManager.Instance.CloseDirectly<MainMenuCanvas>();
+        this._uiManager.CloseAll();
     }
 
     private void HandlePlaying()
     {
-        UIManager.Instance.Open<GamePlayCanvas>();
-
-        var timeLimit = LevelManager.Instance.CurrentLevelData.timeLimit;
-        this._timerController.StartTimer(timeLimit);
         Time.timeScale = 1f;
     }
 
     private void HandlePaused()
     {
-        Debug.Log("Game State: Paused");
         Time.timeScale = 0f;
+        _uiManager.Open<PauseCanvas>();
     }
 
     private void HandleLevelCompleted()
     {
         Debug.Log("Game State: Level Complete");
-        _timerController.StopTimer();
+        this.timeManager.StopTimer();
+        this._scoreManager.SubmitAndTrySetNewHighScore();
+        _uiManager.Open<WinCanvas>();
     }
 
     private void HandleGameOver()
     {
         Debug.Log("Game State: Game Over");
-        _timerController.StopTimer();
+        this.timeManager.StopTimer();
+        _scoreManager.SubmitAndTrySetNewHighScore();
+    }
+
+    private void HandleShuffling()
+    {
+        Debug.Log("Game State: Shuffling... Player input is locked.");
+    }
+
+    public void RestartLevel()
+    {
+        Time.timeScale = 1f;
+        UpdateGameState(GameState.LevelSetup);
+        _levelManager.RestartLevel();
+    }
+
+    public void QuitToMainMenu()
+    {
+        Time.timeScale = 1f;
+        UpdateGameState(GameState.MainMenu);
+    }
+
+    private void SetupNewLevel()
+    {
+        _uiManager.CloseAll();
+        _uiManager.Open<GamePlayCanvas>();
+
+        _scoreManager.ResetScore();
+        var timeLimit = _levelManager.CurrentLevelData.timeLimit;
+        timeManager.StartTimer(timeLimit);
     }
 
     #endregion

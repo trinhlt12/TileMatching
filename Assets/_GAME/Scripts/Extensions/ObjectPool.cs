@@ -3,7 +3,7 @@ namespace _GAME.Scripts.Extensions
     using System.Collections.Generic;
     using UnityEngine;
 
-    public class ObjectPool<T> where T : MonoBehaviour
+    public class ObjectPool<T> where T : Component
     {
         private Queue<T> _objectPool = new();
         private T        _objectPrefab;
@@ -22,7 +22,25 @@ namespace _GAME.Scripts.Extensions
 
         public T Spawn(Vector3 position, Quaternion rotation)
         {
-            var instance = this._objectPool.Count > 0 ? this._objectPool.Dequeue() : Object.Instantiate(this._objectPrefab);
+            T instance = null;
+
+            // Keep trying to get a valid instance from pool
+            while (_objectPool.Count > 0)
+            {
+                var pooledInstance = _objectPool.Dequeue();
+                if (pooledInstance != null) // Check if not destroyed
+                {
+                    instance = pooledInstance;
+                    break;
+                }
+                // If destroyed, continue to next item in pool
+            }
+
+            // If no valid instance found, create new one
+            if (instance == null)
+            {
+                instance = Object.Instantiate(_objectPrefab);
+            }
 
             instance.transform.SetPositionAndRotation(position, rotation);
             instance.gameObject.SetActive(true);
@@ -32,8 +50,11 @@ namespace _GAME.Scripts.Extensions
 
         public void ReturnToPool(T instance)
         {
-            instance.gameObject.SetActive(false);
-            _objectPool.Enqueue(instance);
+            if (instance != null) // Add null check
+            {
+                instance.gameObject.SetActive(false);
+                _objectPool.Enqueue(instance);
+            }
         }
     }
 }

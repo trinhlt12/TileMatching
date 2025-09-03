@@ -8,5 +8,6 @@ namespace _GAME.Scripts.Core
         Paused = 3,
         LevelCompleted = 4,
         GameOver = 5,
+        Shuffling = 6,
     }
 }

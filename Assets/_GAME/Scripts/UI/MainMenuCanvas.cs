@@ -20,7 +20,7 @@ namespace _GAME.Scripts.UI
         {
             Debug.Log("MainMenu: Play Button Clicked! Notifying GameManager.");
 
-            GameManager.Instance.StartLevel(1);
+            this._gameManager.StartLevel(1);
         }
     }
 }

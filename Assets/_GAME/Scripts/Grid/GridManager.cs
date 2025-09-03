@@ -1,10 +1,13 @@
 namespace _GAME.Scripts.Grid
 {
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using _GAME.Scripts.Core;
     using _GAME.Scripts.Extensions;
     using _GAME.Scripts.Level;
+    using _GAME.Scripts.Score;
+    using _GAME.Scripts.Services;
     using _GAME.Scripts.Tile;
     using DG.Tweening;
     using UnityEngine;
@@ -17,6 +20,12 @@ namespace _GAME.Scripts.Grid
         [SerializeField] private GameObject tilePrefab;
         [SerializeField] private Transform  gridParent;
 
+        [Header("VFX")] [SerializeField] private GameObject matchVFXPrefab;
+
+        public const  float SPAWN_ANIMATION_DURATION = 0.5f;
+        public const  float SPAWN_STAGGER_PER_TILE   = 0.03f;
+        private const float CAMERA_PADDING           = 2f;
+
         private       int       rows;
         private       int       cols;
         private       LevelData currentLevelData;
@@ -24,16 +33,20 @@ namespace _GAME.Scripts.Grid
 
         [Header("Dependencies")] [SerializeField] private LineDrawer lineDrawer;
 
-        public static GridManager   Instance { get; private set; }
-        private       GridData      gridData;
-        private       GameObject[,] cellObjects;
+        private GridData      gridData;
+        private GameObject[,] cellObjects;
 
-        private List<TileDB> allTileData => TileManager.Instance.tileDataList;
+        private List<TileDB>   allTileData => this._tileManager.tileDataList;
+        private List<TileView> _activeTiles = new List<TileView>();
 
-        /*
-        private       Dictionary<TileType, ObjectPool<TileView>> _tilePools = new Dictionary<TileType, ObjectPool<TileView>>();
-        */
-        private ObjectPool<TileView> _tilePool;
+        private ObjectPool<TileView>       _tilePool;
+        private ObjectPool<ParticleSystem> _vfxPool;
+
+        private GameManager _gameManager;
+        private TileManager _tileManager;
+        private ScoreManager _scoreManager;
+        private Pathfinder  _pathfinder;
+        private CameraController _cameraController;
 
         #endregion
 
@@ -41,15 +54,9 @@ namespace _GAME.Scripts.Grid
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            ServiceLocator.Register(this);
+            this._pathfinder = new Pathfinder();
+
             this.OnInit();
         }
 
@@ -57,11 +64,16 @@ namespace _GAME.Scripts.Grid
         {
             GameManager.OnGameStateChanged += HandleGameStateChange;
 
-            /*SetupGrid();*/
+            _gameManager = ServiceLocator.Get<GameManager>();
+            _tileManager = ServiceLocator.Get<TileManager>();
+            _scoreManager = ServiceLocator.Get<ScoreManager>();
+            _cameraController = ServiceLocator.Get<CameraController>();
         }
 
         private void OnDestroy()
         {
+            ServiceLocator.Unregister<GridManager>();
+
             GameManager.OnGameStateChanged -= HandleGameStateChange;
         }
 
@@ -69,11 +81,11 @@ namespace _GAME.Scripts.Grid
 
         #region PUBLIC-METHODS
 
-        public void SetupGridFromData(LevelData levelData)
+        public float SetupGridFromData(LevelData levelData)
         {
             if (levelData == null)
             {
-                return;
+                return 0f;
             }
 
             ClearOldGrid();
@@ -83,21 +95,35 @@ namespace _GAME.Scripts.Grid
             this.cols             = levelData.gridSize.cols;
 
             InitializeGrid();
+
+            float totalAnimationTime = GenerateAndPlaceTiles();
+            while (this._tileManager.IsDeadlocked())
+            {
+                Debug.LogWarning("Initial board state is deadlocked. Reshuffling data instantly.");
+                ShuffleTileData(GetAllActiveTiles());
+            }
+            return totalAnimationTime;
         }
 
         public void ClearMatch(TileView tile1, TileView tile2)
         {
+            this._scoreManager.AddScore(this._scoreManager.DefaultScoreValue);
+            PlayVFXAt(tile1.transform.position);
+            PlayVFXAt(tile2.transform.position);
+
             var cell1 = gridData.GetCell(tile1.GridPosition.y, tile1.GridPosition.x);
             if (cell1 != null)
             {
-                cell1.isActive          = false;
+                cell1.isActive = false;
+                _activeTiles.Remove(tile1);
                 cell1.tileViewReference = null;
             }
 
             var cell2 = gridData.GetCell(tile2.GridPosition.y, tile2.GridPosition.x);
             if (cell2 != null)
             {
-                cell2.isActive          = false;
+                cell2.isActive = false;
+                this._activeTiles.Remove(tile2);
                 cell2.tileViewReference = null;
             }
 
@@ -111,6 +137,9 @@ namespace _GAME.Scripts.Grid
             }
             if (_tilePool != null)
             {
+                tile1.gameObject.SetActive(false);
+                tile2.gameObject.SetActive(false);
+
                 _tilePool.ReturnToPool(tile1);
                 _tilePool.ReturnToPool(tile2);
             }
@@ -119,6 +148,99 @@ namespace _GAME.Scripts.Grid
                 Destroy(tile1.gameObject);
                 Destroy(tile2.gameObject);
             }
+            if (_activeTiles.Count == 0)
+            {
+                Debug.Log("GridManager: All tiles cleared! Level Complete!");
+                _gameManager.UpdateGameState(GameState.LevelCompleted);
+            }
+        }
+
+        public void CheckDeadlockAndShuffleIfNeeded()
+        {
+            if (this._tileManager.IsDeadlocked() && this._activeTiles.Count > 0)
+            {
+                Debug.LogWarning("DEADLOCK DETECTED! No more valid moves. Initiating auto-shuffle.");
+                StartCoroutine(ShuffleAnimationRoutine());
+            }
+        }
+
+        public IEnumerator ShuffleAnimationRoutine()
+        {
+            this._gameManager.UpdateGameState(GameState.Shuffling);
+
+            var activeTiles = GetAllActiveTiles();
+            if (activeTiles.Count <= 1)
+            {
+                this._gameManager.UpdateGameState(GameState.Playing);
+                yield break;
+            }
+
+            float   animationDuration = 0.5f;
+            Vector3 centerPoint       = gridParent.position;
+
+            Sequence flyInSequence = DOTween.Sequence();
+            foreach (var tile in activeTiles)
+            {
+                tile.IsLocked = true;
+                flyInSequence.Join(tile.transform.DOMove(centerPoint, animationDuration).SetEase(Ease.InBack));
+                flyInSequence.Join(tile.TileVisual.transform.DOScale(0f, animationDuration));
+            }
+            yield return flyInSequence.WaitForCompletion();
+
+            ShuffleTileData(activeTiles);
+
+            Sequence flyOutSequence = DOTween.Sequence();
+            foreach (var tile in activeTiles)
+            {
+                flyOutSequence.Join(tile.transform.DOLocalMove(Vector3.zero, animationDuration).SetEase(Ease.OutBack));
+                flyOutSequence.Join(tile.TileVisual.transform.DOScale(1f, animationDuration));
+            }
+            yield return flyOutSequence.WaitForCompletion();
+
+            foreach (var tile in activeTiles)
+            {
+                tile.IsLocked = false;
+            }
+
+            this._gameManager.UpdateGameState(GameState.Playing);
+        }
+
+        private void ShuffleTileData(List<TileView> tilesToShuffle)
+        {
+            List<TileType> currentTypes = tilesToShuffle.Select(t => t.Type).ToList();
+
+            for (int i = 0; i < currentTypes.Count - 1; i++)
+            {
+                int randomIndex = Random.Range(i, currentTypes.Count);
+                (currentTypes[i], currentTypes[randomIndex]) = (currentTypes[randomIndex], currentTypes[i]); // Swap
+            }
+
+            for (int i = 0; i < tilesToShuffle.Count; i++)
+            {
+                TileView tileView = tilesToShuffle[i];
+                TileType newType  = currentTypes[i];
+
+                tileView.Type = newType;
+
+                var tileData = allTileData.Find(t => t.TileType == newType);
+                if (tileData != null)
+                {
+                    var spriteRenderer = tileView.TileRenderer.GetComponent<SpriteRenderer>();
+                    if (spriteRenderer != null)
+                    {
+                        spriteRenderer.sprite = tileData.TileImage;
+                    }
+                }
+                tileView.name = $"Tile_{newType}_{tileView.GridPosition.y}_{tileView.GridPosition.x}";
+            }
+
+            Debug.Log($"Shuffled {tilesToShuffle.Count} tiles successfully.");
+        }
+
+        public void PlayVFXAt(Vector3 position)
+        {
+            if (this._vfxPool == null) return;
+            var vfxInstance = this._vfxPool.Spawn(position, Quaternion.identity);
         }
 
         public List<Vector2Int> IsMatchValid(TileView tile1, TileView tile2)
@@ -128,19 +250,7 @@ namespace _GAME.Scripts.Grid
             Vector2Int pos1 = new Vector2Int(tile1.GridPosition.x + 1, tile1.GridPosition.y + 1);
             Vector2Int pos2 = new Vector2Int(tile2.GridPosition.x + 1, tile2.GridPosition.y + 1);
 
-            // Try to find a path and store it.
-            List<Vector2Int> path;
-
-            path = CheckLineMatch(pos1, pos2);
-            if (path != null) return path;
-
-            path = CheckL_ShapeMatch(pos1, pos2);
-            if (path != null) return path;
-
-            path = CheckZ_U_ShapeMatch(pos1, pos2);
-            if (path != null) return path;
-
-            return null; // No path found
+            return _pathfinder.FindPath(pos1, pos2);
         }
 
         public Vector3 GetWorldPositionForPaddedGrid(Vector2Int paddedPos)
@@ -176,7 +286,7 @@ namespace _GAME.Scripts.Grid
 
         public List<TileView> GetAllActiveTiles()
         {
-            var activeTiles = new List<TileView>();
+            /*var activeTiles = new List<TileView>();
             for (int r = 0; r < this.rows; r++)
             {
                 for (int c = 0; c < this.cols; c++)
@@ -187,7 +297,8 @@ namespace _GAME.Scripts.Grid
                     }
                 }
             }
-            return activeTiles;
+            return activeTiles;*/
+            return this._activeTiles;
         }
 
         public void HidePath()
@@ -221,10 +332,47 @@ namespace _GAME.Scripts.Grid
                 Debug.LogError("Tile Prefab does not have a TileView component!");
             }
             this._tilePool = new ObjectPool<TileView>(tileView, 100);
+            if (this.matchVFXPrefab == null)
+            {
+                Debug.LogError("Match VFX Prefab is not assigned in GridManager!");
+            }
+            else
+            {
+                var particleSystem = this.matchVFXPrefab.GetComponent<ParticleSystem>();
+                if (particleSystem != null)
+                {
+                    this._vfxPool = new ObjectPool<ParticleSystem>(particleSystem, 20);
+                }
+                else
+                {
+                    Debug.LogError("Match VFX Prefab does not have a ParticleSystem component!");
+                }
+            }
         }
 
         public void ClearOldGrid()
         {
+            if (gridData != null)
+            {
+                for (int r = 0; r < gridData.rows; r++)
+                {
+                    for (int c = 0; c < gridData.cols; c++)
+                    {
+                        var cell = gridData.cells[r, c];
+                        if (cell.isActive && cell.tileViewReference != null)
+                        {
+                            cell.tileViewReference.gameObject.SetActive(false);
+                            _tilePool.ReturnToPool(cell.tileViewReference);
+                            cell.tileViewReference = null;
+                            cell.isActive          = false;
+                        }
+                    }
+                }
+            }
+
+            _activeTiles.Clear();
+
+            // Destroy cell objects
             if (cellObjects != null)
             {
                 for (int r = 0; r < cellObjects.GetLength(0); r++)
@@ -264,19 +412,26 @@ namespace _GAME.Scripts.Grid
                 else
                     newRows = Mathf.Max(2, newRows - 1);
             }
-
+            if (_cameraController != null)
+            {
+                _cameraController.AdjustCameraToFit(newCols, newRows, CELL_SIZE, CAMERA_PADDING);
+            }
+            else
+            {
+                Debug.LogWarning("CameraController not found. Camera will not be adjusted.");
+            }
             this.rows = newRows;
             this.cols = newCols;
 
             gridData = new GridData(newRows, newCols);
+            _pathfinder.SetGridData(gridData);
+
             GridCalculator.CalculateWorldPositions(gridData, CELL_SIZE, Camera.main);
             cellObjects = new GameObject[newRows, newCols];
 
             Debug.Log($"Grid initialized: {newRows}x{newCols} cells, Cell size: {CELL_SIZE}");
 
             SpawnCellsFromLayout();
-
-            GenerateAndPlaceTiles();
         }
 
         private void SpawnCellsFromLayout()
@@ -316,13 +471,8 @@ namespace _GAME.Scripts.Grid
             Debug.Log($"Spawned {newRows * newCols} empty cells successfully!");
         }
 
-        private void GenerateAndPlaceTiles()
+        private float GenerateAndPlaceTiles()
         {
-            if (this.currentLevelData == null)
-            {
-                return;
-            }
-
             var validCellPositions = new List<Vector2Int>();
             for (int row = 0; row < this.rows; row++)
             {
@@ -339,7 +489,7 @@ namespace _GAME.Scripts.Grid
 
             if (totalCells == 0 || totalCells % 2 != 0)
             {
-                return;
+                return 0f;
             }
 
             var availableTileTypes = allTileData
@@ -349,7 +499,7 @@ namespace _GAME.Scripts.Grid
 
             if (availableTileTypes.Count == 0)
             {
-                return;
+                return 0f;
             }
 
             int maxPossibleTypes = totalCells / 2;
@@ -357,7 +507,7 @@ namespace _GAME.Scripts.Grid
 
             if (numTypesToUse == 0)
             {
-                return;
+                return 0f;
             }
 
             var selectedTileTypes = availableTileTypes.OrderBy(x => Random.value).Take(numTypesToUse).ToList();
@@ -393,11 +543,14 @@ namespace _GAME.Scripts.Grid
                 Vector2Int positionToPlace = validCellPositions[i];
                 TileType   tileToPlace     = tilesToPlace[i];
 
-                SpawnTileAt(positionToPlace.y, positionToPlace.x, tileToPlace);
+                SpawnTileAt(positionToPlace.y, positionToPlace.x, tileToPlace, i);
             }
+            float lastTileDelay      = (totalCells - 1) * SPAWN_STAGGER_PER_TILE;
+            float totalAnimationTime = lastTileDelay + SPAWN_ANIMATION_DURATION;
+            return totalAnimationTime;
         }
 
-        private void SpawnTileAt(int row, int col, TileType tileType)
+        private void SpawnTileAt(int row, int col, TileType tileType, int staggerIndex)
         {
             if (!this.gridData.IsValidPosition(row, col))
             {
@@ -423,7 +576,7 @@ namespace _GAME.Scripts.Grid
                 return;
             }
 
-            var spriteRenderer = tileObj.TileVisual.GetComponent<SpriteRenderer>();
+            var spriteRenderer = tileObj.TileRenderer.GetComponent<SpriteRenderer>();
             if (spriteRenderer != null)
             {
                 spriteRenderer.sprite = tileData.TileImage;
@@ -435,6 +588,10 @@ namespace _GAME.Scripts.Grid
                 tileView.Type                              = tileType;
                 tileView.GridPosition                      = new Vector2Int(col, row); // Note: x=col, y=row
                 gridData.cells[row, col].tileViewReference = tileView;
+
+                _activeTiles.Add(tileView);
+                float staggerDelay = staggerIndex * SPAWN_STAGGER_PER_TILE;
+                tileView.AnimateSpawn(staggerDelay);
             }
 
             gridData.cells[row, col].tileType = tileType;
@@ -459,152 +616,7 @@ namespace _GAME.Scripts.Grid
             var realRow = pos.y - 1;
             var realCol = pos.x - 1;
 
-            // The cell is "empty" if the tile at that position is NOT active.
             return !gridData.cells[realRow, realCol].isActive;
-        }
-
-        #endregion
-
-        #region CHECK-MATCHES
-
-        private List<Vector2Int> CheckLineMatch(Vector2Int pos1, Vector2Int pos2)
-        {
-            var path = new List<Vector2Int>();
-
-            // Check for same column
-            if (pos1.x == pos2.x)
-            {
-                int col  = pos1.x;
-                int minY = Mathf.Min(pos1.y, pos2.y);
-                int maxY = Mathf.Max(pos1.y, pos2.y);
-
-                for (int row = minY + 1; row < maxY; row++)
-                {
-                    if (!IsCellEmpty(new Vector2Int(col, row))) return null; // Obstacle found, return failure
-                }
-
-                path.Add(pos1);
-                path.Add(pos2);
-                return path;
-            }
-
-            // Check for same row
-            if (pos1.y == pos2.y)
-            {
-                int row  = pos1.y;
-                int minX = Mathf.Min(pos1.x, pos2.x);
-                int maxX = Mathf.Max(pos1.x, pos2.x);
-
-                for (int col = minX + 1; col < maxX; col++)
-                {
-                    if (!IsCellEmpty(new Vector2Int(col, row))) return null; // Obstacle found, return failure
-                }
-
-                path.Add(pos1);
-                path.Add(pos2);
-                return path;
-            }
-
-            return null; // Failure
-        }
-
-        private List<Vector2Int> CheckL_ShapeMatch(Vector2Int pos1, Vector2Int pos2)
-        {
-            var corner1 = new Vector2Int(pos1.x, pos2.y);
-            var corner2 = new Vector2Int(pos2.x, pos1.y);
-
-            if (IsCellEmpty(corner1))
-            {
-                var path1 = CheckLineMatch(pos1, corner1);
-                var path2 = CheckLineMatch(corner1, pos2);
-
-                if (path1 != null && path2 != null)
-                {
-                    return path1.Concat(path2.Skip(1)).ToList();
-                }
-            }
-
-            if (IsCellEmpty(corner2))
-            {
-                // Check for path via corner2.
-                var path1 = CheckLineMatch(pos1, corner2);
-                var path2 = CheckLineMatch(corner2, pos2);
-
-                if (path1 != null && path2 != null)
-                {
-                    return path1.Concat(path2.Skip(1)).ToList();
-                }
-            }
-
-            return null; // Failure
-        }
-
-        private List<Vector2Int> CheckZ_U_ShapeMatch(Vector2Int pos1, Vector2Int pos2)
-        {
-            // --- Scan RIGHT from pos1 ---
-            for (int x = pos1.x + 1; x < this.cols + 2; x++)
-            {
-                var currentPos = new Vector2Int(x, pos1.y);
-                if (!IsCellEmpty(currentPos)) break; // Stop if we hit an obstacle
-
-                // Try to find an L-path from this empty cell to the destination
-                var lPath = CheckL_ShapeMatch(currentPos, pos2);
-                if (lPath != null)
-                {
-                    // SUCCESS! We found a path. Now, construct the full path.
-                    var fullPath = new List<Vector2Int> { pos1 };
-                    fullPath.AddRange(lPath);
-                    return fullPath;
-                }
-            }
-
-            // --- Scan LEFT from pos1 ---
-            for (int x = pos1.x - 1; x >= 0; x--)
-            {
-                var currentPos = new Vector2Int(x, pos1.y);
-                if (!IsCellEmpty(currentPos)) break;
-
-                var lPath = CheckL_ShapeMatch(currentPos, pos2);
-                if (lPath != null)
-                {
-                    var fullPath = new List<Vector2Int> { pos1 };
-                    fullPath.AddRange(lPath);
-                    return fullPath;
-                }
-            }
-
-            // --- Scan DOWN from pos1 ---
-            for (int y = pos1.y + 1; y < this.rows + 2; y++)
-            {
-                var currentPos = new Vector2Int(pos1.x, y);
-                if (!IsCellEmpty(currentPos)) break;
-
-                var lPath = CheckL_ShapeMatch(currentPos, pos2);
-                if (lPath != null)
-                {
-                    var fullPath = new List<Vector2Int> { pos1 };
-                    fullPath.AddRange(lPath);
-                    return fullPath;
-                }
-            }
-
-            // --- Scan UP from pos1 ---
-            for (int y = pos1.y - 1; y >= 0; y--)
-            {
-                var currentPos = new Vector2Int(pos1.x, y);
-                if (!IsCellEmpty(currentPos)) break;
-
-                var lPath = CheckL_ShapeMatch(currentPos, pos2);
-                if (lPath != null)
-                {
-                    var fullPath = new List<Vector2Int> { pos1 };
-                    fullPath.AddRange(lPath);
-                    return fullPath;
-                }
-            }
-
-            // No two-turn path was found in any direction
-            return null;
         }
 
         #endregion
